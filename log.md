@@ -2,4 +2,4 @@
 
 | Date | Description | Hours |
 |------|-------------|-------|
-|  3/26 | Initial Project Creation and Design | 3 hours |
+|  3/26 | Initial Project Creation and Design | 2 hours |
