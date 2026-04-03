@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import { Header } from '../../../shared/components/Header';
 import { Footer } from '../../../shared/components/Footer';
 import { StatusBadge } from '../components/StatusBadge';
@@ -17,6 +18,8 @@ function formatSalary(min: number | null, max: number | null, currency: string) 
 }
 
 export function DashboardPage() {
+  const navigate = useNavigate();
+
   return (
     <div className="flex min-h-screen flex-col bg-white">
       <Header />
@@ -46,7 +49,8 @@ export function DashboardPage() {
               {dummyApplications.map((app) => (
                 <tr
                   key={app.id}
-                  className="group border-b border-gray-50 transition-colors hover:bg-gray-50"
+                  onClick={() => navigate(`/applications/${app.id}`)}
+                  className="group cursor-pointer border-b border-gray-50 transition-colors hover:bg-gray-50"
                 >
                   <td className="py-3 pr-6 font-medium text-gray-900">
                     {app.companyName ?? '—'}

@@ -1,9 +1,19 @@
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { LayoutGrid, LogOut, User } from 'lucide-react';
 import { authService } from '../../services/auth.service';
 
 export function Header() {
   const navigate = useNavigate();
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    function onScroll() {
+      setScrolled(window.scrollY > 0);
+    }
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
 
   async function handleLogout() {
     await authService.logout();
@@ -11,7 +21,7 @@ export function Header() {
   }
 
   return (
-    <header className="flex items-center justify-center px-6 py-3">
+    <header className={`sticky top-0 z-10 flex items-center justify-center bg-white px-6 py-3 transition-colors duration-150 ${scrolled ? 'border-b border-gray-100' : 'border-b border-transparent'}`}>
       <nav className="flex items-center gap-1">
         <Link
           to="/applications"

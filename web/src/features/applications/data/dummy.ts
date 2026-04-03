@@ -1,4 +1,4 @@
-import type { Application } from '../../../types/application.types';
+import type { Application, AiAnalysis } from '../../../types/application.types';
 
 export const dummyApplications: Application[] = [
   {
@@ -114,5 +114,37 @@ export const dummyApplications: Application[] = [
     remote: true,
     createdAt: '2026-03-25T15:00:00Z',
     updatedAt: '2026-03-25T15:00:00Z',
+  },
+];
+
+export const dummyAiAnalyses: AiAnalysis[] = [
+  {
+    id: 'ai1',
+    applicationId: '1',
+    fitScore: 82,
+    verdict: 'strong fit',
+    strengths: [
+      "Strong TypeScript and React experience matches role requirements",
+      "Prior work on developer tooling is directly relevant",
+      "Open source contributions align with Linear's engineering culture",
+    ],
+    missingKeywords: ["GraphQL", "Relay", "Rust"],
+    suggestions: "Highlight any experience with real-time collaboration or conflict resolution in your resume. Mention familiarity with performance profiling tools — the job description emphasizes perceived performance.",
+    coverLetter: "Hi Linear team,\n\nI've been a daily Linear user for over a year, and the product's obsessive attention to speed and keyboard-first design is something I deeply respect — and try to bring to my own work.\n\nIn my recent role I led a full rewrite of our frontend data layer in TypeScript, reducing bundle size by 30% and cutting load times in half. I'd love to bring that same focus to Linear.\n\nLooking forward to connecting.\n\nBest,\n[Your name]",
+    createdAt: '2026-03-22T10:00:00Z',
+  },
+  {
+    id: 'ai2',
+    applicationId: '3',
+    fitScore: 74,
+    verdict: 'moderate fit',
+    strengths: [
+      'Full-stack background covers both product and infra work Notion values',
+      'Experience with collaborative editing tools is a plus',
+    ],
+    missingKeywords: ['Golang', 'Kubernetes', 'Postgres at scale'],
+    suggestions: 'Your backend experience is thin relative to the role. Consider emphasizing any database design or API architecture work. The team is large — cultural fit and communication skills matter, so weave in examples of cross-functional collaboration.',
+    coverLetter: null,
+    createdAt: '2026-03-28T12:00:00Z',
   },
 ];
