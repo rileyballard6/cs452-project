@@ -91,9 +91,13 @@ export function ProfilePage() {
           <div className="mt-6 border-t border-gray-100 pt-6">
             <button
               onClick={handleSave}
-              className="cursor-pointer rounded-lg border border-gray-200 px-4 py-1.5 text-sm text-gray-600 hover:opacity-70"
+              className={`cursor-pointer rounded-lg border px-4 py-1.5 text-sm font-medium transition-colors duration-300 hover:opacity-70 ${
+                saved
+                  ? 'border-green-200 bg-green-50 text-green-600'
+                  : 'border-gray-200 text-gray-600'
+              }`}
             >
-              {saved ? 'Saved' : 'Save changes'}
+              {saved ? 'Saved ✓' : 'Save changes'}
             </button>
           </div>
 
