@@ -10,11 +10,11 @@ import type { ApplicationStatus, AiVerdict } from '../../../types/application.ty
 const STATUS_OPTIONS: ApplicationStatus[] = ['saved', 'applied', 'interview', 'offer', 'rejected'];
 
 const statusStyles: Record<ApplicationStatus, string> = {
-  saved:     'bg-gray-100 text-gray-600',
-  applied:   'bg-blue-100 text-blue-600',
-  interview: 'bg-amber-100 text-amber-700',
-  offer:     'bg-green-100 text-green-700',
-  rejected:  'bg-red-100 text-red-600',
+  saved:     'bg-[rgb(240,239,237)] text-[rgb(55,53,50)]',
+  applied:   'bg-[rgb(213,227,246)] text-[rgb(22,58,120)]',
+  interview: 'bg-[rgb(240,228,198)] text-[rgb(100,72,15)]',
+  offer:     'bg-[rgb(221,230,222)] text-[rgb(28,78,48)]',
+  rejected:  'bg-[rgb(244,221,218)] text-[rgb(110,35,25)]',
 };
 
 const verdictStyles: Record<AiVerdict, string> = {
@@ -108,7 +108,7 @@ export function ApplicationPage() {
             <select
               value={status}
               onChange={(e) => handleStatusChange(e.target.value as ApplicationStatus)}
-              className={`cursor-pointer rounded-full border-0 px-3.5 py-1.5 text-sm font-medium outline-none ${statusStyles[status]}`}
+              className={`cursor-pointer rounded-full border-0 px-2 py-1 text-sm font-small outline-none ${statusStyles[status]}`}
             >
               {STATUS_OPTIONS.map((s) => (
                 <option key={s} value={s} className="bg-white text-gray-700 capitalize">
