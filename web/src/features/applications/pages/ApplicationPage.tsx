@@ -1,11 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import confetti from 'canvas-confetti';
 import { ArrowLeft, ExternalLink, Sparkles, StickyNote, FileText, Calendar, DollarSign, MapPin, Radio, Link2 } from 'lucide-react';
-import { dummyApplications, dummyAiAnalyses } from '../data/dummy';
+import { applicationService } from '../../../services/application.service';
 import { Header } from '../../../shared/components/Header';
 import { Footer } from '../../../shared/components/Footer';
-import type { ApplicationStatus, AiVerdict } from '../../../types/application.types';
+import type { Application, ApplicationStatus } from '../../../types/application.types';
 
 const STATUS_OPTIONS: ApplicationStatus[] = ['saved', 'applied', 'interview', 'offer', 'rejected'];
 
@@ -17,11 +17,6 @@ const statusStyles: Record<ApplicationStatus, string> = {
   rejected:  'bg-[rgb(244,221,218)] text-[rgb(110,35,25)]',
 };
 
-const verdictStyles: Record<AiVerdict, string> = {
-  'strong fit':   'bg-green-100 text-green-700',
-  'moderate fit': 'bg-amber-100 text-amber-700',
-  'long shot':    'bg-red-100 text-red-600',
-};
 
 function formatDate(date: string | null) {
   if (!date) return '—';
@@ -40,14 +35,26 @@ export function ApplicationPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
-  const app = dummyApplications.find((a) => a.id === id);
-  const ai = dummyAiAnalyses.find((a) => a.applicationId === id) ?? null;
-
-  const [status, setStatus] = useState(app?.status ?? 'saved');
-  const [notes, setNotes] = useState(app?.notes ?? '');
-  const [jobDescription, setJobDescription] = useState(app?.jobDescription ?? '');
+  const [app, setApp] = useState<Application | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [status, setStatus] = useState<ApplicationStatus>('saved');
+  const [notes, setNotes] = useState('');
+  const [jobDescription, setJobDescription] = useState('');
   const [saved, setSaved] = useState(false);
   const [showOffer, setShowOffer] = useState(false);
+
+  useEffect(() => {
+    if (!id) return;
+    applicationService.getOne(id)
+      .then((data) => {
+        setApp(data);
+        setStatus(data.status as ApplicationStatus);
+        setNotes(data.notes ?? '');
+        setJobDescription(data.jobDescription ?? '');
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [id]);
 
   function handleStatusChange(newStatus: ApplicationStatus) {
     setStatus(newStatus);
@@ -55,6 +62,25 @@ export function ApplicationPage() {
       setShowOffer(true);
       confetti({ particleCount: 160, spread: 80, origin: { y: 0.55 } });
     }
+  }
+
+  async function handleSave() {
+    if (!app) return;
+    await applicationService.update(app.id, { status, notes, jobDescription });
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  }
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen flex-col bg-white">
+        <Header />
+        <main className="flex flex-1 items-center justify-center">
+          <p className="text-sm text-gray-300">Loading…</p>
+        </main>
+        <Footer />
+      </div>
+    );
   }
 
   if (!app) {
@@ -72,12 +98,6 @@ export function ApplicationPage() {
         <Footer />
       </div>
     );
-  }
-
-  function handleSave() {
-    // TODO: wire up to PATCH /api/applications/:id
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
   }
 
   return (
@@ -175,76 +195,14 @@ export function ApplicationPage() {
 
           <div className="mt-8 border-t border-gray-100" />
 
-          {/* AI Overview */}
+          {/* AI Overview — placeholder until AI routes are wired up */}
           <div className="mt-8">
             <p className="mb-4 flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider text-purple-400">
               <Sparkles size={12} />AI Overview
             </p>
-
-            {ai ? (
-              <div className="space-y-6">
-
-                {/* Score + verdict */}
-                <div className="flex items-center gap-4">
-                  <div className="flex items-baseline gap-1">
-                    <span className="text-3xl font-medium text-gray-900">{ai.fitScore ?? '—'}</span>
-                    {ai.fitScore !== null && <span className="text-sm text-gray-400">/ 100</span>}
-                  </div>
-                  {ai.verdict && (
-                    <span className={`rounded-full px-3 py-1 text-xs font-medium capitalize ${verdictStyles[ai.verdict]}`}>
-                      {ai.verdict}
-                    </span>
-                  )}
-                </div>
-
-                {/* Strengths */}
-                {ai.strengths && ai.strengths.length > 0 && (
-                  <div>
-                    <p className="mb-2 text-xs font-medium text-gray-400">Strengths</p>
-                    <ul className="space-y-1">
-                      {ai.strengths.map((s: string, i: number) => (
-                        <li key={i} className="text-sm text-gray-700">· {s}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-
-                {/* Missing keywords */}
-                {ai.missingKeywords && ai.missingKeywords.length > 0 && (
-                  <div>
-                    <p className="mb-2 text-xs font-medium text-gray-400">Missing keywords</p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {ai.missingKeywords.map((kw: string) => (
-                        <span key={kw} className="rounded-full bg-gray-100 px-2.5 py-0.5 text-xs text-gray-500">
-                          {kw}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Suggestions */}
-                {ai.suggestions && (
-                  <div>
-                    <p className="mb-2 text-xs font-medium text-gray-400">Suggestions</p>
-                    <p className="text-sm leading-relaxed text-gray-700">{ai.suggestions}</p>
-                  </div>
-                )}
-
-                {/* Cover letter */}
-                {ai.coverLetter && (
-                  <div>
-                    <p className="mb-2 text-xs font-medium text-gray-400">Cover letter draft</p>
-                    <p className="whitespace-pre-wrap text-sm leading-relaxed text-gray-700">{ai.coverLetter}</p>
-                  </div>
-                )}
-
-              </div>
-            ) : (
-              <p className="text-sm text-gray-300">
-                Paste a job description above and save to generate an AI analysis.
-              </p>
-            )}
+            <p className="text-sm text-gray-300">
+              Paste a job description below and save to generate an AI analysis.
+            </p>
           </div>
 
           <div className="mt-8 border-t border-gray-100" />

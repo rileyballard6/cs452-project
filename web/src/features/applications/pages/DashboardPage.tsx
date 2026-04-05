@@ -1,21 +1,22 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ChevronUp, ChevronDown, ChevronsUpDown,
   SlidersHorizontal, Building2, Briefcase, Tag,
-  Calendar, DollarSign, MapPin, Radio,
+  Calendar, DollarSign, MapPin, Radio, Plus, X,
 } from 'lucide-react';
 import { Header } from '../../../shared/components/Header';
 import { Footer } from '../../../shared/components/Footer';
 import { StatusBadge } from '../components/StatusBadge';
-import { dummyApplications } from '../data/dummy';
-import type { Application, ApplicationStatus } from '../../../types/application.types';
+import { applicationService } from '../../../services/application.service';
+import type { Application, ApplicationStatus, ApplicationSource } from '../../../types/application.types';
 
 type SortKey = 'companyName' | 'roleTitle' | 'status' | 'dateApplied' | 'salaryMin' | 'location' | 'source';
 type SortDir = 'asc' | 'desc';
 
 const STATUS_ORDER: ApplicationStatus[] = ['saved', 'applied', 'interview', 'offer', 'rejected'];
 const ALL_STATUSES: ApplicationStatus[] = ['saved', 'applied', 'interview', 'offer', 'rejected'];
+const ALL_SOURCES: ApplicationSource[] = ['linkedin', 'indeed', 'greenhouse', 'manual'];
 
 function formatDate(date: string | null) {
   if (!date) return '—';
@@ -60,7 +61,7 @@ function SortIcon({ col, sortKey, sortDir }: { col: SortKey; sortKey: SortKey; s
   return sortDir === 'asc' ? <ChevronUp size={11} /> : <ChevronDown size={11} />;
 }
 
-const COLUMNS: { key: SortKey; label: string; icon: React.ReactNode }[] = [
+const COLUMNS: { key: SortKey; label: string; icon: ReactNode }[] = [
   { key: 'companyName', label: 'Company',  icon: <Building2 size={12} /> },
   { key: 'roleTitle',   label: 'Role',     icon: <Briefcase size={12} /> },
   { key: 'status',      label: 'Status',   icon: <Tag size={12} /> },
@@ -70,14 +71,28 @@ const COLUMNS: { key: SortKey; label: string; icon: React.ReactNode }[] = [
   { key: 'source',      label: 'Source',   icon: <Radio size={12} /> },
 ];
 
+const inputClass = 'w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 outline-none focus:border-gray-400 placeholder:text-gray-300';
+
 export function DashboardPage() {
   const navigate = useNavigate();
+  const [applications, setApplications] = useState<Application[]>([]);
+  const [loading, setLoading] = useState(true);
   const [sortKey, setSortKey] = useState<SortKey>('dateApplied');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
   const [statusFilter, setStatusFilter] = useState<ApplicationStatus | 'all'>('all');
   const [remoteFilter, setRemoteFilter] = useState<'all' | 'remote' | 'onsite'>('all');
   const [filterOpen, setFilterOpen] = useState(false);
+  const [showCreate, setShowCreate] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [createForm, setCreateForm] = useState({ companyName: '', roleTitle: '', source: 'linkedin' as ApplicationSource });
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    applicationService.getAll()
+      .then(setApplications)
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -98,7 +113,22 @@ export function DashboardPage() {
     }
   }
 
-  const filtered = dummyApplications
+  async function handleCreate() {
+    setCreating(true);
+    try {
+      const app = await applicationService.create(createForm);
+      setApplications((prev) => [app, ...prev]);
+      setShowCreate(false);
+      setCreateForm({ companyName: '', roleTitle: '', source: 'linkedin' });
+      navigate(`/applications/${app.id}`);
+    } catch {
+      // TODO: surface error toast
+    } finally {
+      setCreating(false);
+    }
+  }
+
+  const filtered = applications
     .filter((a) => statusFilter === 'all' || a.status === statusFilter)
     .filter((a) => {
       if (remoteFilter === 'remote') return a.remote;
@@ -107,7 +137,6 @@ export function DashboardPage() {
     });
 
   const sorted = sortApps(filtered, sortKey, sortDir);
-
   const hasActiveFilters = statusFilter !== 'all' || remoteFilter !== 'all';
   const thClass = 'pb-2.5 text-left text-xs font-medium text-gray-400 cursor-pointer select-none hover:text-gray-600 transition-colors pr-6';
 
@@ -116,14 +145,13 @@ export function DashboardPage() {
       <Header />
 
       <main className="flex-1 px-6 py-8">
-        {/* Page title */}
         <div className="mb-5 flex items-center justify-between">
           <h1 className="text-base font-medium text-gray-900">Applications</h1>
 
           <div className="flex items-center gap-3">
-            <span className="text-sm text-gray-400">{sorted.length} of {dummyApplications.length}</span>
+            <span className="text-sm text-gray-400">{sorted.length} of {applications.length}</span>
 
-            {/* Filter button + dropdown */}
+            {/* Filter */}
             <div className="relative" ref={dropdownRef}>
               <button
                 onClick={() => setFilterOpen((o) => !o)}
@@ -144,8 +172,6 @@ export function DashboardPage() {
 
               {filterOpen && (
                 <div className="animate-rise-up absolute right-0 top-9 z-20 w-56 rounded-xl border border-gray-100 bg-white p-4 shadow-lg">
-
-                  {/* Status */}
                   <p className="mb-2 text-xs font-medium text-gray-400">Status</p>
                   <div className="mb-4 flex flex-wrap gap-1">
                     <button
@@ -165,7 +191,6 @@ export function DashboardPage() {
                     ))}
                   </div>
 
-                  {/* Remote */}
                   <p className="mb-2 text-xs font-medium text-gray-400">Location type</p>
                   <div className="flex gap-1">
                     {(['all', 'remote', 'onsite'] as const).map((r) => (
@@ -190,6 +215,15 @@ export function DashboardPage() {
                 </div>
               )}
             </div>
+
+            {/* Add new */}
+            <button
+              onClick={() => setShowCreate(true)}
+              className="flex cursor-pointer items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-1.5 text-xs text-gray-600 transition-colors hover:opacity-70"
+            >
+              <Plus size={12} />
+              New
+            </button>
           </div>
         </div>
 
@@ -210,10 +244,16 @@ export function DashboardPage() {
               </tr>
             </thead>
             <tbody>
-              {sorted.length === 0 ? (
+              {loading ? (
                 <tr>
                   <td colSpan={7} className="py-10 text-center text-sm text-gray-300">
-                    No applications match these filters.
+                    Loading…
+                  </td>
+                </tr>
+              ) : sorted.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="py-10 text-center text-sm text-gray-300">
+                    {applications.length === 0 ? 'No applications yet. Add your first one.' : 'No applications match these filters.'}
                   </td>
                 </tr>
               ) : (
@@ -244,6 +284,64 @@ export function DashboardPage() {
           </table>
         </div>
       </main>
+
+      {/* Create modal */}
+      {showCreate && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-[2px]">
+          <div className="animate-rise-up mx-4 w-full max-w-sm rounded-2xl bg-white p-8 shadow-xl">
+            <div className="mb-6 flex items-center justify-between">
+              <h2 className="text-base font-medium text-gray-900">New application</h2>
+              <button onClick={() => setShowCreate(false)} className="cursor-pointer text-gray-300 hover:text-gray-500">
+                <X size={16} />
+              </button>
+            </div>
+
+            <form onSubmit={(e) => { e.preventDefault(); handleCreate(); }} className="space-y-3">
+              <input
+                type="text"
+                placeholder="Company name"
+                value={createForm.companyName}
+                onChange={(e) => setCreateForm((f) => ({ ...f, companyName: e.target.value }))}
+                className={inputClass}
+                autoFocus
+              />
+              <input
+                type="text"
+                placeholder="Role title"
+                value={createForm.roleTitle}
+                onChange={(e) => setCreateForm((f) => ({ ...f, roleTitle: e.target.value }))}
+                className={inputClass}
+              />
+              <select
+                value={createForm.source}
+                onChange={(e) => setCreateForm((f) => ({ ...f, source: e.target.value as ApplicationSource }))}
+                className={inputClass}
+              >
+                {ALL_SOURCES.map((s) => (
+                  <option key={s} value={s} className="capitalize">{s.charAt(0).toUpperCase() + s.slice(1)}</option>
+                ))}
+              </select>
+
+              <div className="flex gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowCreate(false)}
+                  className="flex-1 cursor-pointer rounded-lg border border-gray-200 py-2 text-sm text-gray-500 hover:opacity-70"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={creating || (!createForm.companyName && !createForm.roleTitle)}
+                  className="flex-1 cursor-pointer rounded-lg border border-gray-900 bg-gray-900 py-2 text-sm text-white hover:opacity-70 disabled:opacity-40"
+                >
+                  {creating ? 'Creating…' : 'Create'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       <Footer />
     </div>
