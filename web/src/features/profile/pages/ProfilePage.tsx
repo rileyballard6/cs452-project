@@ -1,16 +1,21 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
+import { Upload, CheckCircle } from 'lucide-react';
 import { useAuth } from '../../../hooks/useAuth';
+import { userService } from '../../../services/user.service';
 import { Header } from '../../../shared/components/Header';
 import { Footer } from '../../../shared/components/Footer';
 
 export function ProfilePage() {
   const { user, isLoading } = useAuth();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [name, setName] = useState('');
   const [resumeText, setResumeText] = useState('');
   const [nameInitialized, setNameInitialized] = useState(false);
   const [resumeInitialized, setResumeInitialized] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
 
   // Seed local state from user once loaded
   if (!isLoading && user) {
@@ -24,8 +29,23 @@ export function ProfilePage() {
     }
   }
 
-  function handleSave() {
-    // TODO: wire up to PATCH /api/profile
+  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const updated = await userService.uploadResume(file);
+      setResumeText(updated.resumeText ?? '');
+      setUploadedFileName(file.name);
+    } finally {
+      setUploading(false);
+      // Reset input so the same file can be re-uploaded if needed
+      e.target.value = '';
+    }
+  }
+
+  async function handleSave() {
+    await userService.updateMe({ displayName: name, resumeText });
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   }
@@ -36,6 +56,8 @@ export function ProfilePage() {
     .slice(0, 2)
     .join('')
     .toUpperCase();
+
+  const hasExistingResume = !!(user?.resumeText && !uploadedFileName);
 
   return (
     <div className="flex min-h-screen flex-col bg-white">
@@ -59,7 +81,6 @@ export function ProfilePage() {
             )}
 
             <div className="flex-1">
-              {/* Editable name */}
               <input
                 type="text"
                 value={name}
@@ -67,7 +88,6 @@ export function ProfilePage() {
                 placeholder="Your name"
                 className="w-full bg-transparent text-base font-medium text-gray-900 outline-none placeholder:text-gray-300 focus:border-b focus:border-gray-200"
               />
-              {/* Non-editable email */}
               <p className="mt-0.5 text-sm text-gray-400">{user?.email ?? '—'}</p>
             </div>
           </div>
@@ -79,10 +99,48 @@ export function ProfilePage() {
             <p className="mb-3 text-xs font-medium uppercase tracking-wider text-gray-400">
               Resume
             </p>
+
+            {/* Upload area */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="application/pdf"
+              className="hidden"
+              onChange={handleFileChange}
+            />
+
+            {uploadedFileName || hasExistingResume ? (
+              <div className="mb-4 flex items-center justify-between rounded-lg border border-gray-100 bg-gray-50 px-4 py-3">
+                <div className="flex items-center gap-2.5">
+                  <CheckCircle size={15} className="text-green-500 shrink-0" />
+                  <span className="text-sm text-gray-600">
+                    {uploadedFileName ?? 'Resume on file'}
+                  </span>
+                </div>
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                  className="cursor-pointer text-xs text-gray-400 hover:opacity-70 disabled:opacity-40"
+                >
+                  {uploading ? 'Processing…' : 'Replace'}
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading}
+                className="mb-4 flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-gray-200 py-4 text-sm text-gray-400 transition-colors hover:border-gray-300 hover:text-gray-500 disabled:opacity-40"
+              >
+                <Upload size={14} />
+                {uploading ? 'Processing…' : 'Upload PDF'}
+              </button>
+            )}
+
+            {/* Editable extracted text */}
             <textarea
               value={resumeText}
               onChange={(e) => setResumeText(e.target.value)}
-              placeholder="Paste your resume text here. This is used to score job fit."
+              placeholder="Resume text will appear here after uploading. You can also paste it directly."
               rows={20}
               className="w-full resize-none bg-transparent text-sm leading-relaxed text-gray-700 outline-none placeholder:text-gray-300"
             />

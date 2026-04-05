@@ -5,6 +5,7 @@ import session from 'express-session';
 import passport from 'passport';
 import authRouter from './routes/auth';
 import applicationsRouter from './routes/applications';
+import usersRouter from './routes/users';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -21,6 +22,7 @@ app.use(passport.session());
 
 app.use('/auth', authRouter);
 app.use('/applications', applicationsRouter);
+app.use('/users', usersRouter);
 
 app.get('/health', (_req, res) => res.json({ status: 'ok' }));
 

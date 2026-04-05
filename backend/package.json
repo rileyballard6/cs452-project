@@ -15,9 +15,11 @@
     "express": "^4.21.2",
     "express-session": "^1.18.1",
     "jsonwebtoken": "^9.0.2",
+    "multer": "^2.1.1",
     "mysql2": "^3.12.0",
     "passport": "^0.7.0",
     "passport-google-oauth20": "^2.0.0",
+    "pdf-parse": "^2.4.5",
     "uuid": "^11.1.0"
   },
   "devDependencies": {
@@ -25,9 +27,11 @@
     "@types/express": "^5.0.1",
     "@types/express-session": "^1.18.1",
     "@types/jsonwebtoken": "^9.0.9",
+    "@types/multer": "^2.1.0",
     "@types/node": "^22.13.14",
     "@types/passport": "^1.0.17",
     "@types/passport-google-oauth20": "^2.0.16",
+    "@types/pdf-parse": "^1.1.5",
     "@types/uuid": "^10.0.0",
     "nodemon": "^3.1.9",
     "tsx": "^4.19.3",

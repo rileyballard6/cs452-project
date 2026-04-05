@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import confetti from 'canvas-confetti';
-import { ArrowLeft, ExternalLink, Sparkles, StickyNote, FileText, Calendar, DollarSign, MapPin, Radio, Link2 } from 'lucide-react';
+import { ArrowLeft, ExternalLink, Sparkles, StickyNote, FileText, Calendar, DollarSign, MapPin, Radio, Link2, Pencil, X } from 'lucide-react';
 import { applicationService } from '../../../services/application.service';
 import { Header } from '../../../shared/components/Header';
 import { Footer } from '../../../shared/components/Footer';
-import type { Application, ApplicationStatus } from '../../../types/application.types';
+import type { Application, ApplicationStatus, ApplicationSource } from '../../../types/application.types';
 
 const STATUS_OPTIONS: ApplicationStatus[] = ['saved', 'applied', 'interview', 'offer', 'rejected'];
+const SOURCE_OPTIONS: ApplicationSource[] = ['linkedin', 'indeed', 'greenhouse', 'manual'];
 
 const statusStyles: Record<ApplicationStatus, string> = {
   saved:     'bg-[rgb(240,239,237)] text-[rgb(55,53,50)]',
@@ -17,6 +18,7 @@ const statusStyles: Record<ApplicationStatus, string> = {
   rejected:  'bg-[rgb(244,221,218)] text-[rgb(110,35,25)]',
 };
 
+const inputClass = 'w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 outline-none focus:border-gray-400 placeholder:text-gray-300';
 
 function formatDate(date: string | null) {
   if (!date) return '—';
@@ -31,6 +33,18 @@ function formatSalary(min: number | null, max: number | null) {
   return `up to ${fmt(max!)}`;
 }
 
+interface EditForm {
+  roleTitle: string;
+  companyName: string;
+  dateApplied: string;
+  salaryMin: string;
+  salaryMax: string;
+  location: string;
+  remote: boolean;
+  source: ApplicationSource | '';
+  jobUrl: string;
+}
+
 export function ApplicationPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -42,6 +56,13 @@ export function ApplicationPage() {
   const [jobDescription, setJobDescription] = useState('');
   const [saved, setSaved] = useState(false);
   const [showOffer, setShowOffer] = useState(false);
+  const [showEdit, setShowEdit] = useState(false);
+  const [editForm, setEditForm] = useState<EditForm>({
+    roleTitle: '', companyName: '', dateApplied: '',
+    salaryMin: '', salaryMax: '', location: '',
+    remote: false, source: '', jobUrl: '',
+  });
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -51,16 +72,68 @@ export function ApplicationPage() {
         setStatus(data.status as ApplicationStatus);
         setNotes(data.notes ?? '');
         setJobDescription(data.jobDescription ?? '');
+        setEditForm({
+          roleTitle:   data.roleTitle ?? '',
+          companyName: data.companyName ?? '',
+          dateApplied: data.dateApplied ?? '',
+          salaryMin:   data.salaryMin?.toString() ?? '',
+          salaryMax:   data.salaryMax?.toString() ?? '',
+          location:    data.location ?? '',
+          remote:      data.remote,
+          source:      data.source ?? '',
+          jobUrl:      data.jobUrl ?? '',
+        });
       })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, [id]);
 
-  function handleStatusChange(newStatus: ApplicationStatus) {
+  async function handleStatusChange(newStatus: ApplicationStatus) {
     setStatus(newStatus);
     if (newStatus === 'offer') {
       setShowOffer(true);
       confetti({ particleCount: 160, spread: 80, origin: { y: 0.55 } });
+    }
+    if (!app) return;
+    await applicationService.update(app.id, { status: newStatus });
+  }
+
+  function openEdit() {
+    // Re-seed form from current app state before opening
+    if (!app) return;
+    setEditForm({
+      roleTitle:   app.roleTitle ?? '',
+      companyName: app.companyName ?? '',
+      dateApplied: app.dateApplied ?? '',
+      salaryMin:   app.salaryMin?.toString() ?? '',
+      salaryMax:   app.salaryMax?.toString() ?? '',
+      location:    app.location ?? '',
+      remote:      app.remote,
+      source:      app.source ?? '',
+      jobUrl:      app.jobUrl ?? '',
+    });
+    setShowEdit(true);
+  }
+
+  async function handleEditSave() {
+    if (!app) return;
+    setSaving(true);
+    try {
+      const updated = await applicationService.update(app.id, {
+        roleTitle:   editForm.roleTitle || null,
+        companyName: editForm.companyName || null,
+        dateApplied: editForm.dateApplied || null,
+        salaryMin:   editForm.salaryMin ? parseInt(editForm.salaryMin) : null,
+        salaryMax:   editForm.salaryMax ? parseInt(editForm.salaryMax) : null,
+        location:    editForm.location || null,
+        remote:      editForm.remote,
+        source:      (editForm.source as ApplicationSource) || null,
+        jobUrl:      editForm.jobUrl || null,
+      });
+      setApp(updated);
+      setShowEdit(false);
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -116,7 +189,7 @@ export function ApplicationPage() {
             Applications
           </button>
 
-          {/* Title + status */}
+          {/* Title + status + edit */}
           <div className="mb-1 flex items-start justify-between gap-4">
             <div>
               <h1 className="text-base font-medium text-gray-900">
@@ -125,17 +198,26 @@ export function ApplicationPage() {
               <p className="mt-0.5 text-sm text-gray-400">{app.companyName ?? '—'}</p>
             </div>
 
-            <select
-              value={status}
-              onChange={(e) => handleStatusChange(e.target.value as ApplicationStatus)}
-              className={`cursor-pointer rounded-full border-0 px-2 py-1 text-sm font-small outline-none ${statusStyles[status]}`}
-            >
-              {STATUS_OPTIONS.map((s) => (
-                <option key={s} value={s} className="bg-white text-gray-700 capitalize">
-                  {s.charAt(0).toUpperCase() + s.slice(1)}
-                </option>
-              ))}
-            </select>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={openEdit}
+                className="flex cursor-pointer items-center gap-1 text-xs text-gray-400 hover:opacity-70 transition-opacity"
+              >
+                <Pencil size={12} />
+                Edit
+              </button>
+              <select
+                value={status}
+                onChange={(e) => handleStatusChange(e.target.value as ApplicationStatus)}
+                className={`cursor-pointer rounded-full border-0 px-2 py-1 text-sm outline-none ${statusStyles[status]}`}
+              >
+                {STATUS_OPTIONS.map((s) => (
+                  <option key={s} value={s} className="bg-white text-gray-700 capitalize">
+                    {s.charAt(0).toUpperCase() + s.slice(1)}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
           <div className="mt-6 border-t border-gray-100" />
@@ -161,9 +243,7 @@ export function ApplicationPage() {
               <dd className="mt-1 flex items-center gap-1.5 text-sm text-gray-700">
                 {app.location ?? '—'}
                 {app.remote && (
-                  <span className="rounded-full bg-gray-100 px-1.5 py-0.5 text-xs text-gray-400">
-                    Remote
-                  </span>
+                  <span className="rounded-full bg-gray-100 px-1.5 py-0.5 text-xs text-gray-400">Remote</span>
                 )}
               </dd>
             </div>
@@ -195,7 +275,7 @@ export function ApplicationPage() {
 
           <div className="mt-8 border-t border-gray-100" />
 
-          {/* AI Overview — placeholder until AI routes are wired up */}
+          {/* AI Overview */}
           <div className="mt-8">
             <p className="mb-4 flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider text-purple-400">
               <Sparkles size={12} />AI Overview
@@ -252,6 +332,112 @@ export function ApplicationPage() {
 
         </div>
       </main>
+
+      {/* Edit modal */}
+      {showEdit && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-[2px]">
+          <div className="animate-rise-up mx-4 w-full max-w-sm rounded-2xl bg-white p-8 shadow-xl">
+            <div className="mb-6 flex items-center justify-between">
+              <h2 className="text-base font-medium text-gray-900">Edit details</h2>
+              <button onClick={() => setShowEdit(false)} className="cursor-pointer text-gray-300 hover:text-gray-500">
+                <X size={16} />
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              <input
+                type="text"
+                placeholder="Role title"
+                value={editForm.roleTitle}
+                onChange={(e) => setEditForm((f) => ({ ...f, roleTitle: e.target.value }))}
+                className={inputClass}
+              />
+              <input
+                type="text"
+                placeholder="Company"
+                value={editForm.companyName}
+                onChange={(e) => setEditForm((f) => ({ ...f, companyName: e.target.value }))}
+                className={inputClass}
+              />
+              <input
+                type="date"
+                value={editForm.dateApplied}
+                onChange={(e) => setEditForm((f) => ({ ...f, dateApplied: e.target.value }))}
+                className={inputClass}
+              />
+              <div className="flex gap-2">
+                <input
+                  type="number"
+                  placeholder="Salary min"
+                  value={editForm.salaryMin}
+                  onChange={(e) => setEditForm((f) => ({ ...f, salaryMin: e.target.value }))}
+                  className={inputClass}
+                />
+                <input
+                  type="number"
+                  placeholder="Salary max"
+                  value={editForm.salaryMax}
+                  onChange={(e) => setEditForm((f) => ({ ...f, salaryMax: e.target.value }))}
+                  className={inputClass}
+                />
+              </div>
+              <input
+                type="text"
+                placeholder="Location"
+                value={editForm.location}
+                onChange={(e) => setEditForm((f) => ({ ...f, location: e.target.value }))}
+                className={inputClass}
+              />
+              <input
+                type="url"
+                placeholder="Job URL"
+                value={editForm.jobUrl}
+                onChange={(e) => setEditForm((f) => ({ ...f, jobUrl: e.target.value }))}
+                className={inputClass}
+              />
+              <div className="flex items-center justify-between">
+                <select
+                  value={editForm.source}
+                  onChange={(e) => setEditForm((f) => ({ ...f, source: e.target.value as ApplicationSource }))}
+                  className={inputClass}
+                >
+                  <option value="">Source</option>
+                  {SOURCE_OPTIONS.map((s) => (
+                    <option key={s} value={s} className="capitalize">
+                      {s.charAt(0).toUpperCase() + s.slice(1)}
+                    </option>
+                  ))}
+                </select>
+                <label className="ml-4 flex shrink-0 cursor-pointer items-center gap-1.5 text-sm text-gray-500">
+                  <input
+                    type="checkbox"
+                    checked={editForm.remote}
+                    onChange={(e) => setEditForm((f) => ({ ...f, remote: e.target.checked }))}
+                    className="accent-gray-600"
+                  />
+                  Remote
+                </label>
+              </div>
+            </div>
+
+            <div className="mt-6 flex gap-2">
+              <button
+                onClick={() => setShowEdit(false)}
+                className="flex-1 cursor-pointer rounded-lg border border-gray-200 py-2 text-sm text-gray-500 hover:opacity-70"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleEditSave}
+                disabled={saving}
+                className="flex-1 cursor-pointer rounded-lg border border-gray-900 bg-gray-900 py-2 text-sm text-white hover:opacity-70 disabled:opacity-40"
+              >
+                {saving ? 'Saving…' : 'Save'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Offer congrats modal */}
       {showOffer && (

@@ -1,17 +1,26 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import type { ReactNode } from 'react';
 import { HomePage } from './features/auth/pages/HomePage';
 import { DashboardPage } from './features/applications/pages/DashboardPage';
 import { ProfilePage } from './features/profile/pages/ProfilePage';
 import { ApplicationPage } from './features/applications/pages/ApplicationPage';
+import { useAuth } from './hooks/useAuth';
+
+function ProtectedRoute({ children }: { children: ReactNode }) {
+  const { isAuthenticated, isLoading } = useAuth();
+  if (isLoading) return null;
+  if (!isAuthenticated) return <Navigate to="/" replace />;
+  return <>{children}</>;
+}
 
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<HomePage />} />
-        <Route path="/applications" element={<DashboardPage />} />
-        <Route path="/applications/:id" element={<ApplicationPage />} />
-        <Route path="/profile" element={<ProfilePage />} />
+        <Route path="/applications" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
+        <Route path="/applications/:id" element={<ProtectedRoute><ApplicationPage /></ProtectedRoute>} />
+        <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>

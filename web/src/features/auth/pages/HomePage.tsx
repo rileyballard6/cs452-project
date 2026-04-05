@@ -10,7 +10,7 @@ export function HomePage() {
 
   useEffect(() => {
     if (!isLoading && isAuthenticated) {
-      navigate('/dashboard', { replace: true });
+      navigate('/applications', { replace: true });
     }
   }, [isAuthenticated, isLoading, navigate]);
 
