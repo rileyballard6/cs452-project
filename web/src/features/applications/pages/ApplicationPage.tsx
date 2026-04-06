@@ -1,13 +1,19 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import confetti from 'canvas-confetti';
-import { ArrowLeft, ExternalLink, Sparkles, StickyNote, FileText, Calendar, DollarSign, MapPin, Radio, Link2, Pencil, X } from 'lucide-react';
+import { ArrowLeft, ExternalLink, Sparkles, StickyNote, FileText, Calendar, DollarSign, MapPin, Radio, Link2, Pencil, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { applicationService } from '../../../services/application.service';
 import { Header } from '../../../shared/components/Header';
 import { Footer } from '../../../shared/components/Footer';
-import type { Application, ApplicationStatus, ApplicationSource } from '../../../types/application.types';
+import type { Application, ApplicationStatus, ApplicationSource, AiAnalysis, AiVerdict } from '../../../types/application.types';
 
 const STATUS_OPTIONS: ApplicationStatus[] = ['saved', 'applied', 'interview', 'offer', 'rejected'];
+
+const verdictStyles: Record<AiVerdict, string> = {
+  'strong fit':   'bg-green-100 text-green-700',
+  'moderate fit': 'bg-amber-100 text-amber-700',
+  'long shot':    'bg-red-100 text-red-600',
+};
 const SOURCE_OPTIONS: ApplicationSource[] = ['linkedin', 'indeed', 'greenhouse', 'manual'];
 
 const statusStyles: Record<ApplicationStatus, string> = {
@@ -54,8 +60,12 @@ export function ApplicationPage() {
   const [status, setStatus] = useState<ApplicationStatus>('saved');
   const [notes, setNotes] = useState('');
   const [jobDescription, setJobDescription] = useState('');
-  const [saved, setSaved] = useState(false);
-  const [showOffer, setShowOffer] = useState(false);
+  const [saved, setSaved]               = useState(false);
+  const [showOffer, setShowOffer]       = useState(false);
+  const [analyses, setAnalyses]         = useState<AiAnalysis[]>([]);
+  const [activeIdx, setActiveIdx]       = useState(0);
+  const [analyzing, setAnalyzing]       = useState(false);
+  const [analyzeError, setAnalyzeError] = useState<string | null>(null);
   const [showEdit, setShowEdit] = useState(false);
   const [editForm, setEditForm] = useState<EditForm>({
     roleTitle: '', companyName: '', dateApplied: '',
@@ -67,7 +77,7 @@ export function ApplicationPage() {
   useEffect(() => {
     if (!id) return;
     applicationService.getOne(id)
-      .then((data) => {
+      .then(async (data) => {
         setApp(data);
         setStatus(data.status as ApplicationStatus);
         setNotes(data.notes ?? '');
@@ -83,6 +93,9 @@ export function ApplicationPage() {
           source:      data.source ?? '',
           jobUrl:      data.jobUrl ?? '',
         });
+        const ai = await applicationService.getAnalysis(data.id).catch(() => []);
+        setAnalyses(ai);
+        setActiveIdx(0);
       })
       .catch(() => {})
       .finally(() => setLoading(false));
@@ -144,6 +157,23 @@ export function ApplicationPage() {
     setTimeout(() => setSaved(false), 2000);
   }
 
+  async function handleAnalyze() {
+    if (!app) return;
+    setAnalyzing(true);
+    setAnalyzeError(null);
+    try {
+      // Save current job description first so the backend has the latest
+      await applicationService.update(app.id, { jobDescription });
+      const result = await applicationService.analyze(app.id);
+      setAnalyses(prev => [result, ...prev]);
+      setActiveIdx(0);
+    } catch (err) {
+      setAnalyzeError(err instanceof Error ? err.message : 'Something went wrong');
+    } finally {
+      setAnalyzing(false);
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex min-h-screen flex-col bg-white">
@@ -180,16 +210,25 @@ export function ApplicationPage() {
       <main className="flex-1 px-6 py-10">
         <div className="mx-auto max-w-xl">
 
-          {/* Back */}
-          <button
-            onClick={() => navigate('/applications')}
-            className="mb-8 flex cursor-pointer items-center gap-1.5 text-sm text-gray-400 hover:opacity-70"
-          >
-            <ArrowLeft size={14} />
-            Applications
-          </button>
+          {/* Back + edit */}
+          <div className="mb-8 flex items-center justify-between">
+            <button
+              onClick={() => navigate('/applications')}
+              className="flex cursor-pointer items-center gap-1.5 text-sm text-gray-400 hover:opacity-70"
+            >
+              <ArrowLeft size={14} />
+              Applications
+            </button>
+            <button
+              onClick={openEdit}
+              className="flex cursor-pointer items-center gap-1 text-xs text-gray-400 hover:opacity-70 transition-opacity"
+            >
+              <Pencil size={12} />
+              Edit
+            </button>
+          </div>
 
-          {/* Title + status + edit */}
+          {/* Title + status */}
           <div className="mb-1 flex items-start justify-between gap-4">
             <div>
               <h1 className="text-base font-medium text-gray-900">
@@ -199,13 +238,6 @@ export function ApplicationPage() {
             </div>
 
             <div className="flex items-center gap-2">
-              <button
-                onClick={openEdit}
-                className="flex cursor-pointer items-center gap-1 text-xs text-gray-400 hover:opacity-70 transition-opacity"
-              >
-                <Pencil size={12} />
-                Edit
-              </button>
               <select
                 value={status}
                 onChange={(e) => handleStatusChange(e.target.value as ApplicationStatus)}
@@ -263,10 +295,10 @@ export function ApplicationPage() {
                     href={app.jobUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-sm text-gray-500 hover:opacity-70"
+                    className="inline-flex max-w-full items-center gap-1 text-sm text-gray-500 hover:opacity-70"
                   >
-                    {app.jobUrl}
-                    <ExternalLink size={12} />
+                    <span className="truncate">{app.jobUrl}</span>
+                    <ExternalLink size={12} className="shrink-0" />
                   </a>
                 </dd>
               </div>
@@ -277,12 +309,126 @@ export function ApplicationPage() {
 
           {/* AI Overview */}
           <div className="mt-8">
-            <p className="mb-4 flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider text-purple-400">
-              <Sparkles size={12} />AI Overview
-            </p>
-            <p className="text-sm text-gray-300">
-              Paste a job description below and save to generate an AI analysis.
-            </p>
+            <div className="mb-4 flex items-center justify-between">
+              <p className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider text-purple-400">
+                <Sparkles size={12} />AI Overview
+              </p>
+              <div className="flex items-center gap-2">
+                {analyses.length > 0 && (
+                  <span className="text-xs text-gray-300">{analyses.length} / 3</span>
+                )}
+                <button
+                  onClick={handleAnalyze}
+                  disabled={analyzing || !jobDescription.trim() || analyses.length >= 3}
+                  className="flex cursor-pointer items-center gap-1.5 rounded-lg border border-purple-200 px-3 py-1.5 text-xs text-purple-400 transition-opacity hover:opacity-70 disabled:opacity-30 disabled:cursor-not-allowed"
+                >
+                  {analyzing ? 'Analyzing…' : analyses.length >= 3 ? 'Limit reached' : analyses.length > 0 ? 'Re-analyze' : 'Analyze'}
+                </button>
+              </div>
+            </div>
+
+            {analyzeError && (
+              <p className="mb-4 text-sm text-red-400">{analyzeError}</p>
+            )}
+
+            {analyzing && (
+              <p className="text-sm text-gray-300">Running analysis…</p>
+            )}
+
+            {!analyzing && analyses.length > 0 && (() => {
+              const analysis = analyses[activeIdx];
+              return (
+                <div className="space-y-6">
+                  {/* Nav indicator */}
+                  {analyses.length > 1 && (
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setActiveIdx(i => Math.min(i + 1, analyses.length - 1))}
+                        disabled={activeIdx >= analyses.length - 1}
+                        className="cursor-pointer text-gray-300 hover:text-gray-500 disabled:opacity-30 disabled:cursor-not-allowed"
+                      >
+                        <ChevronLeft size={14} />
+                      </button>
+                      <span className="text-xs text-gray-400">
+                        {activeIdx === 0 ? 'Latest' : `${analyses.length - activeIdx} of ${analyses.length}`}
+                        {' · '}
+                        {new Date(analysis.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                      </span>
+                      <button
+                        onClick={() => setActiveIdx(i => Math.max(i - 1, 0))}
+                        disabled={activeIdx <= 0}
+                        className="cursor-pointer text-gray-300 hover:text-gray-500 disabled:opacity-30 disabled:cursor-not-allowed"
+                      >
+                        <ChevronRight size={14} />
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Score + verdict */}
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-baseline gap-1">
+                      <span className="text-3xl font-medium text-gray-900">{analysis.fitScore ?? '—'}</span>
+                      {analysis.fitScore !== null && <span className="text-sm text-gray-400">/ 100</span>}
+                    </div>
+                    {analysis.verdict && (
+                      <span className={`rounded-full px-3 py-1 text-xs font-medium capitalize ${verdictStyles[analysis.verdict as AiVerdict]}`}>
+                        {analysis.verdict}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Strengths */}
+                  {analysis.strengths && analysis.strengths.length > 0 && (
+                    <div>
+                      <p className="mb-2 text-xs font-medium text-gray-400">Strengths</p>
+                      <ul className="space-y-1">
+                        {analysis.strengths.map((s, i) => (
+                          <li key={i} className="text-sm text-gray-700">· {s}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Missing keywords */}
+                  {analysis.missingKeywords && analysis.missingKeywords.length > 0 && (
+                    <div>
+                      <p className="mb-2 text-xs font-medium text-gray-400">Missing keywords</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {analysis.missingKeywords.map((kw) => (
+                          <span key={kw} className="rounded-full bg-gray-100 px-2.5 py-0.5 text-xs text-gray-500">
+                            {kw}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Suggestions */}
+                  {analysis.suggestions && (
+                    <div>
+                      <p className="mb-2 text-xs font-medium text-gray-400">Suggestions</p>
+                      <p className="text-sm leading-relaxed text-gray-700">{analysis.suggestions}</p>
+                    </div>
+                  )}
+
+                  {/* Cover letter */}
+                  {analysis.coverLetter && (
+                    <div>
+                      <p className="mb-2 text-xs font-medium text-gray-400">Cover letter draft</p>
+                      <p className="whitespace-pre-wrap text-sm leading-relaxed text-gray-700">{analysis.coverLetter}</p>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+
+            {!analyzing && analyses.length === 0 && (
+              <p className="text-sm text-gray-300">
+                {jobDescription.trim()
+                  ? 'Hit Analyze to score your fit for this role.'
+                  : 'Paste a job description below, then hit Analyze.'}
+              </p>
+            )}
           </div>
 
           <div className="mt-8 border-t border-gray-100" />

@@ -1,4 +1,4 @@
-import type { Application } from '../types/application.types';
+import type { Application, AiAnalysis } from '../types/application.types';
 
 const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:3000';
 
@@ -42,5 +42,23 @@ export const applicationService = {
       method: 'DELETE',
       credentials: 'include',
     });
+  },
+
+  async getAnalysis(id: string): Promise<AiAnalysis[]> {
+    const res = await fetch(`${API_BASE}/applications/${id}/analysis`, { credentials: 'include' });
+    if (!res.ok) throw new Error(String(res.status));
+    return res.json();
+  },
+
+  async analyze(id: string): Promise<AiAnalysis> {
+    const res = await fetch(`${API_BASE}/applications/${id}/analyze`, {
+      method: 'POST',
+      credentials: 'include',
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.error ?? String(res.status));
+    }
+    return res.json();
   },
 };
