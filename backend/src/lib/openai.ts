@@ -90,6 +90,87 @@ Use actual details from the resume, not placeholders.
   3. Closing that acknowledges any gap honestly and confidently, then ends with a strong call to action.
 Never use placeholder text like "[Company Name]" — infer the company name from the job description.`;
 
+export interface ParsedResume {
+  headline: string | null;
+  location: string | null;
+  website: string | null;
+  linkedin: string | null;
+  twitter: string | null;
+  workExperience: {
+    company: string;
+    title: string;
+    startDate: string | null;
+    endDate: string | null;
+    current: boolean;
+    description: string;
+  }[];
+  skills: {
+    name: string;
+    category: 'language' | 'framework' | 'tool' | 'other';
+  }[];
+  projects: {
+    title: string;
+    description: string;
+    url: string | null;
+    repoUrl: string | null;
+  }[];
+}
+
+const PARSE_PROMPT = `\
+You are a resume parser. Extract structured data from the raw resume text provided.
+Return only a JSON object matching this exact shape — no extra fields, no markdown:
+
+{
+  "headline": <string | null — inferred job title or professional tagline, e.g. "Full Stack Developer">,
+  "location": <string | null — city/state or city/country>,
+  "website": <string | null — personal site URL if present>,
+  "linkedin": <string | null — LinkedIn URL if present>,
+  "twitter": <string | null — Twitter/X handle or URL if present>,
+  "workExperience": [
+    {
+      "company": <string>,
+      "title": <string>,
+      "startDate": <string | null — YYYY-MM format>,
+      "endDate": <string | null — YYYY-MM format, null if current>,
+      "current": <boolean>,
+      "description": <string — 1–4 sentence summary of responsibilities and impact>
+    }
+  ],
+  "skills": [
+    {
+      "name": <string — single skill or tool, e.g. "TypeScript">,
+      "category": <"language" | "framework" | "tool" | "other">
+    }
+  ],
+  "projects": [
+    {
+      "title": <string>,
+      "description": <string — 1–3 sentence summary>,
+      "url": <string | null — live URL if mentioned>,
+      "repoUrl": <string | null — GitHub or repo URL if mentioned>
+    }
+  ]
+}
+
+Rules:
+- workExperience should be ordered most recent first.
+- skills: split grouped entries ("React, Node, TypeScript") into individual items. Do not duplicate.
+- If a field is not present in the resume, use null or an empty array.
+- Do not invent information. Only extract what is explicitly stated.`;
+
+export async function parseResume(resumeText: string): Promise<ParsedResume> {
+  const completion = await openai.chat.completions.create({
+    model: 'gpt-4o-mini',
+    response_format: { type: 'json_object' },
+    messages: [
+      { role: 'system', content: PARSE_PROMPT },
+      { role: 'user', content: resumeText },
+    ],
+  });
+
+  return JSON.parse(completion.choices[0].message.content ?? '{}') as ParsedResume;
+}
+
 export async function analyzeResume(
   resumeText: string,
   jobDescription: string

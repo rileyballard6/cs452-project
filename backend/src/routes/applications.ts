@@ -19,6 +19,30 @@ interface AiRow extends RowDataPacket {
 
 interface UserRow extends RowDataPacket {
   resume_text: string | null;
+  display_name: string | null;
+  headline: string | null;
+  location: string | null;
+}
+
+interface WorkRow extends RowDataPacket {
+  company: string | null;
+  title: string | null;
+  start_date: string | null;
+  end_date: string | null;
+  current_role: number;
+  description: string | null;
+}
+
+interface SkillRow extends RowDataPacket {
+  name: string;
+  category: string;
+}
+
+interface ProjectRow extends RowDataPacket {
+  title: string | null;
+  description: string | null;
+  url: string | null;
+  repo_url: string | null;
 }
 
 function rowToAnalysis(row: AiRow) {
@@ -150,10 +174,68 @@ router.post('/:id/analyze', async (req, res) => {
     }
 
     const [users] = await pool.query<UserRow[]>(
-      'SELECT resume_text FROM users WHERE id = ?',
+      'SELECT display_name, headline, location, resume_text FROM users WHERE id = ?',
       [userId]
     );
-    if (!users[0]?.resume_text) {
+    const user = users[0];
+
+    const [workRows] = await pool.query<WorkRow[]>(
+      'SELECT company, title, start_date, end_date, current_role, description FROM work_experience WHERE user_id = ? ORDER BY display_order ASC',
+      [userId]
+    );
+    const [skillRows] = await pool.query<SkillRow[]>(
+      'SELECT name, category FROM skills WHERE user_id = ? ORDER BY display_order ASC',
+      [userId]
+    );
+    const [projectRows] = await pool.query<ProjectRow[]>(
+      'SELECT title, description, url FROM projects WHERE user_id = ? ORDER BY display_order ASC',
+      [userId]
+    );
+
+    const hasStructured = workRows.length > 0 || skillRows.length > 0;
+    let resumeContext: string;
+
+    if (hasStructured) {
+      const lines: string[] = [];
+
+      if (user?.display_name) {
+        lines.push(`Candidate: ${user.display_name}${user.headline ? ` — ${user.headline}` : ''}${user.location ? ` · ${user.location}` : ''}`);
+      }
+
+      if (workRows.length > 0) {
+        lines.push('\nWork Experience:');
+        for (const w of workRows) {
+          const period = w.current_role
+            ? `${w.start_date ?? '?'} – Present`
+            : `${w.start_date ?? '?'} – ${w.end_date ?? '?'}`;
+          lines.push(`  ${w.title ?? 'Role'} at ${w.company ?? 'Company'} (${period})`);
+          if (w.description) lines.push(`    ${w.description}`);
+        }
+      }
+
+      if (skillRows.length > 0) {
+        const byCategory: Record<string, string[]> = {};
+        for (const s of skillRows) {
+          (byCategory[s.category] ??= []).push(s.name);
+        }
+        lines.push('\nSkills:');
+        for (const [cat, names] of Object.entries(byCategory)) {
+          lines.push(`  ${cat}: ${names.join(', ')}`);
+        }
+      }
+
+      if (projectRows.length > 0) {
+        lines.push('\nProjects:');
+        for (const p of projectRows) {
+          lines.push(`  ${p.title ?? 'Project'}${p.url ? ` (${p.url})` : ''}`);
+          if (p.description) lines.push(`    ${p.description}`);
+        }
+      }
+
+      resumeContext = lines.join('\n');
+    } else if (user?.resume_text) {
+      resumeContext = user.resume_text;
+    } else {
       return res.status(400).json({ error: 'No resume found — add one on your profile page.' });
     }
 
@@ -165,7 +247,7 @@ router.post('/:id/analyze', async (req, res) => {
       return res.status(400).json({ error: 'Analysis limit reached — max 3 per application.' });
     }
 
-    const raw = await analyzeResume(users[0].resume_text, app.job_description);
+    const raw = await analyzeResume(resumeContext, app.job_description);
 
     const id = uuidv4();
     await pool.query(

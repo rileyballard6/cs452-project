@@ -12,6 +12,14 @@ interface UserRow extends RowDataPacket {
   display_name: string | null;
   avatar_url: string | null;
   resume_text: string | null;
+  username: string | null;
+  headline: string | null;
+  bio: string | null;
+  location: string | null;
+  website: string | null;
+  linkedin_url: string | null;
+  twitter: string | null;
+  portfolio_public: number;
   created_at: Date;
   last_login: Date;
 }
@@ -91,6 +99,14 @@ router.get('/me', (req, res) => {
     displayName: u.display_name,
     avatarUrl: u.avatar_url,
     resumeText: u.resume_text,
+    username: u.username,
+    headline: u.headline,
+    bio: u.bio,
+    location: u.location,
+    website: u.website,
+    linkedinUrl: u.linkedin_url,
+    twitter: u.twitter,
+    portfolioPublic: Boolean(u.portfolio_public),
     createdAt: u.created_at,
     lastLogin: u.last_login,
   });

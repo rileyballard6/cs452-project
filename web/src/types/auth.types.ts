@@ -5,6 +5,14 @@ export interface User {
   displayName: string | null;
   avatarUrl: string | null;
   resumeText: string | null;
+  username: string | null;
+  headline: string | null;
+  bio: string | null;
+  location: string | null;
+  website: string | null;
+  linkedinUrl: string | null;
+  twitter: string | null;
+  portfolioPublic: boolean;
   createdAt: string;
   lastLogin: string;
 }

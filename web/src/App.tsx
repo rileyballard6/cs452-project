@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { HomePage } from './features/auth/pages/HomePage';
 import { DashboardPage } from './features/applications/pages/DashboardPage';
 import { ProfilePage } from './features/profile/pages/ProfilePage';
+import { PublicProfilePage } from './features/profile/pages/PublicProfilePage';
 import { ApplicationPage } from './features/applications/pages/ApplicationPage';
 import { useAuth } from './hooks/useAuth';
 
@@ -21,6 +22,7 @@ export default function App() {
         <Route path="/applications" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
         <Route path="/applications/:id" element={<ProtectedRoute><ApplicationPage /></ProtectedRoute>} />
         <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+        <Route path="/u/:username" element={<PublicProfilePage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
