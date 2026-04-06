@@ -1,8 +1,39 @@
 import express from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import { pool } from '../db';
+import { analyzeResume } from '../lib/openai';
 import { requireAuth } from '../middleware/requireAuth';
 import type { RowDataPacket, ResultSetHeader } from 'mysql2';
+
+interface AiRow extends RowDataPacket {
+  id: string;
+  application_id: string;
+  fit_score: number | null;
+  verdict: string | null;
+  missing_keywords: string[] | null;
+  strengths: string[] | null;
+  suggestions: string | null;
+  cover_letter: string | null;
+  created_at: Date;
+}
+
+interface UserRow extends RowDataPacket {
+  resume_text: string | null;
+}
+
+function rowToAnalysis(row: AiRow) {
+  return {
+    id: row.id,
+    applicationId: row.application_id,
+    fitScore: row.fit_score,
+    verdict: row.verdict,
+    missingKeywords: row.missing_keywords ?? null,
+    strengths: row.strengths ?? null,
+    suggestions: row.suggestions,
+    coverLetter: row.cover_letter,
+    createdAt: row.created_at,
+  };
+}
 
 interface AppRow extends RowDataPacket {
   id: string;
@@ -79,6 +110,86 @@ router.get('/', async (req, res) => {
     res.json(rows.map(rowToApp));
   } catch {
     res.status(500).json({ error: 'Failed to fetch applications' });
+  }
+});
+
+// GET /applications/:id/analysis
+router.get('/:id/analysis', async (req, res) => {
+  try {
+    const userId = (req.user as any).id;
+    const [apps] = await pool.query<AppRow[]>(
+      'SELECT id FROM applications WHERE id = ? AND user_id = ?',
+      [req.params.id, userId]
+    );
+    if (apps.length === 0) return res.status(404).json({ error: 'Not found' });
+
+    const [rows] = await pool.query<AiRow[]>(
+      'SELECT * FROM ai_analyses WHERE application_id = ? ORDER BY created_at DESC',
+      [req.params.id]
+    );
+    res.json(rows.map(rowToAnalysis));
+  } catch {
+    res.status(500).json({ error: 'Failed to fetch analysis' });
+  }
+});
+
+// POST /applications/:id/analyze
+router.post('/:id/analyze', async (req, res) => {
+  try {
+    const userId = (req.user as any).id;
+
+    const [apps] = await pool.query<AppRow[]>(
+      'SELECT * FROM applications WHERE id = ? AND user_id = ?',
+      [req.params.id, userId]
+    );
+    if (apps.length === 0) return res.status(404).json({ error: 'Not found' });
+    const app = apps[0];
+
+    if (!app.job_description) {
+      return res.status(400).json({ error: 'No job description — paste one and save first.' });
+    }
+
+    const [users] = await pool.query<UserRow[]>(
+      'SELECT resume_text FROM users WHERE id = ?',
+      [userId]
+    );
+    if (!users[0]?.resume_text) {
+      return res.status(400).json({ error: 'No resume found — add one on your profile page.' });
+    }
+
+    const [countRows] = await pool.query<RowDataPacket[]>(
+      'SELECT COUNT(*) as cnt FROM ai_analyses WHERE application_id = ?',
+      [req.params.id]
+    );
+    if ((countRows[0] as any).cnt >= 3) {
+      return res.status(400).json({ error: 'Analysis limit reached — max 3 per application.' });
+    }
+
+    const raw = await analyzeResume(users[0].resume_text, app.job_description);
+
+    const id = uuidv4();
+    await pool.query(
+      `INSERT INTO ai_analyses (id, application_id, fit_score, verdict, missing_keywords, strengths, suggestions, cover_letter)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        id, req.params.id,
+        raw.fitScore ?? null,
+        raw.verdict ?? null,
+        JSON.stringify(raw.missingKeywords ?? []),
+        JSON.stringify(raw.strengths ?? []),
+        raw.suggestions ?? null,
+        raw.coverLetter ?? null,
+      ]
+    );
+
+    const [rows] = await pool.query<AiRow[]>(
+      'SELECT * FROM ai_analyses WHERE id = ?',
+      [id]
+    );
+    res.json(rowToAnalysis(rows[0]));
+  } catch (err) {
+    console.error('Analyze error:', err);
+    res.status(500).json({ error: 'Analysis failed' });
   }
 });
 
