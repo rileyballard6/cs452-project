@@ -1,51 +1,200 @@
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
-  font-family: system-ui, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   width: 320px;
-  padding: 16px;
   background: #fff;
   color: #111;
+  padding: 16px;
 }
 
-h1 { font-size: 18px; margin-bottom: 12px; }
-h2 { font-size: 14px; margin-bottom: 8px; color: #555; }
+/* ── Header ─────────────────────────────────────────── */
+.header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
 
-label {
+.logo-mark {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.logo-mark img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.logo-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.logo-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #111;
+  letter-spacing: -0.01em;
+}
+
+.logo-sub {
+  font-size: 11px;
+  color: #9ca3af;
+}
+
+.user-chip {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #f9fafb;
+  border: 1px solid #f3f4f6;
+  border-radius: 20px;
+  padding: 3px 8px 3px 4px;
+}
+
+.avatar {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.user-chip span {
+  font-size: 11px;
+  color: #6b7280;
+  max-width: 80px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Layout ─────────────────────────────────────────── */
+.divider {
+  height: 1px;
+  background: #f3f4f6;
+  margin-bottom: 14px;
+}
+
+.view { display: flex; flex-direction: column; gap: 10px; }
+.hidden { display: none !important; }
+
+/* ── Badge ──────────────────────────────────────────── */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 500;
+  color: #6b7280;
+  background: #f9fafb;
+  border: 1px solid #f3f4f6;
+  border-radius: 6px;
+  padding: 3px 8px;
+  width: fit-content;
+}
+
+/* ── Form fields ─────────────────────────────────────── */
+.field-group {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  font-size: 13px;
-  margin-bottom: 8px;
 }
 
-input, textarea {
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  padding: 6px 8px;
-  font-size: 13px;
-  width: 100%;
+.field-label {
+  font-size: 11px;
+  font-weight: 500;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
-textarea { height: 80px; resize: vertical; }
-
-button {
+.field-input {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 7px 10px;
+  font-size: 13px;
+  color: #111;
   width: 100%;
-  padding: 8px;
-  background: #4f46e5;
+  outline: none;
+  background: #fff;
+  transition: border-color 0.15s;
+  appearance: none;
+}
+
+.field-input:focus { border-color: #9ca3af; }
+
+/* ── Buttons ─────────────────────────────────────────── */
+.btn-primary {
+  width: 100%;
+  padding: 9px;
+  background: #111;
   color: #fff;
   border: none;
-  border-radius: 6px;
-  font-size: 14px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 500;
   cursor: pointer;
-  margin-top: 4px;
+  transition: background 0.15s;
+  margin-top: 2px;
 }
 
-button:hover { background: #4338ca; }
+.btn-primary:hover { background: #374151; }
+.btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
 
-.success { color: #16a34a; font-size: 13px; margin-top: 8px; }
-.error   { color: #dc2626; font-size: 13px; margin-top: 8px; }
-.hidden  { display: none; }
+.btn-ghost {
+  display: block;
+  text-align: center;
+  font-size: 13px;
+  color: #6b7280;
+  text-decoration: none;
+  padding: 8px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  transition: border-color 0.15s, color 0.15s;
+}
 
-details { margin-top: 12px; }
-summary { font-size: 13px; color: #4f46e5; cursor: pointer; margin-bottom: 8px; }
+.btn-ghost:hover { border-color: #9ca3af; color: #111; }
+
+/* ── Text ────────────────────────────────────────────── */
+.muted {
+  font-size: 13px;
+  color: #6b7280;
+  line-height: 1.5;
+}
+
+.error {
+  font-size: 12px;
+  color: #dc2626;
+}
+
+/* ── Success ─────────────────────────────────────────── */
+.success-icon {
+  width: 36px;
+  height: 36px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  color: #16a34a;
+  margin: 0 auto;
+}
+
+.success-title {
+  font-size: 14px;
+  font-weight: 600;
+  text-align: center;
+  color: #111;
+}

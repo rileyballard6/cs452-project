@@ -364,6 +364,13 @@ router.patch('/:id', async (req, res) => {
         'INSERT INTO status_history (id, application_id, old_status, new_status) VALUES (?, ?, ?, ?)',
         [uuidv4(), req.params.id, old.status, newStatus]
       );
+      // Auto-set date_applied when transitioning to applied and none is set
+      if (newStatus === 'applied' && !old.date_applied && !('dateApplied' in req.body)) {
+        await pool.query(
+          'UPDATE applications SET date_applied = CURDATE() WHERE id = ?',
+          [req.params.id]
+        );
+      }
     }
 
     const [rows] = await pool.query<AppRow[]>('SELECT * FROM applications WHERE id = ?', [req.params.id]);

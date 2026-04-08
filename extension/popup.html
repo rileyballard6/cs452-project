@@ -2,35 +2,64 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Job Tracker</title>
+  <title>Folio</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <div id="app">
-    <h1>Job Tracker</h1>
-
-    <div id="status-msg" class="hidden"></div>
-
-    <section id="scraped-section">
-      <h2>Detected Job</h2>
-      <label>Title <input id="field-title" type="text" /></label>
-      <label>Company <input id="field-company" type="text" /></label>
-      <textarea id="field-description" placeholder="Job description..."></textarea>
-      <button id="btn-save">Save Job</button>
-    </section>
-
-    <section id="manual-section">
-      <details>
-        <summary>Paste manually instead</summary>
-        <label>Job URL <input id="manual-url" type="url" /></label>
-        <label>Title <input id="manual-title" type="text" /></label>
-        <label>Company <input id="manual-company" type="text" /></label>
-        <textarea id="manual-description" placeholder="Paste job description..."></textarea>
-        <button id="btn-manual-save">Save</button>
-      </details>
-    </section>
+  <!-- Header -->
+  <div class="header">
+    <div class="logo-mark"><img src="logo.png" alt="Folio" /></div>
+    <div class="logo-text">
+      <span class="logo-name">Folio</span>
+      <span class="logo-sub">folio.app</span>
+    </div>
+    <div id="user-chip" class="user-chip hidden">
+      <img id="user-avatar" class="avatar" src="" alt="" />
+      <span id="user-name"></span>
+    </div>
   </div>
+
+  <div class="divider"></div>
+
+  <!-- Auth gate -->
+  <div id="view-auth" class="view">
+    <p class="muted">Sign in to start saving jobs and scoring your resume fit.</p>
+    <button id="btn-signin" class="btn-primary">Continue with Google</button>
+  </div>
+
+  <!-- Job detected -->
+  <div id="view-job" class="view hidden">
+    <div id="source-badge" class="badge hidden"></div>
+
+    <div class="field-group">
+      <label class="field-label">Role</label>
+      <input id="field-title" class="field-input" type="text" placeholder="Job title" />
+    </div>
+    <div class="field-group">
+      <label class="field-label">Company</label>
+      <input id="field-company" class="field-input" type="text" placeholder="Company name" />
+    </div>
+    <div class="field-group">
+      <label class="field-label">Status</label>
+      <select id="field-status" class="field-input">
+        <option value="saved">Saved</option>
+        <option value="applied">Applied</option>
+        <option value="interviewing">Interviewing</option>
+      </select>
+    </div>
+
+    <button id="btn-save" class="btn-primary">Save to Folio</button>
+    <p id="save-error" class="error hidden"></p>
+  </div>
+
+  <!-- Success -->
+  <div id="view-success" class="view hidden">
+    <div class="success-icon">✓</div>
+    <p class="success-title">Saved to Folio</p>
+    <p class="muted" id="success-detail"></p>
+    <a id="link-open" href="http://localhost:5173/applications" target="_blank" class="btn-ghost">Open in Folio →</a>
+  </div>
+
   <script src="popup.js"></script>
 </body>
 </html>

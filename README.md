@@ -17,14 +17,12 @@ Keeping track of job applications can get messy, and it's hard to know if your r
 - **Frontend:** React + Tailwind CSS
 - **Backend:** Node.js + Express
 - **Database:** MySQL
-- **AI:** Anthropic API (Claude)
+- **AI:** OpenAI API 
 - **Extension:** Chrome Extension (Vanilla JS)
 
 ---
 
 ## ERD
-
-- There still might be work to do on this design, but it captures what I need for the initial project
 
 ![Alt text](project-db-design.jpg "Optional title")
 

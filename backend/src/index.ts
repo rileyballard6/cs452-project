@@ -10,7 +10,18 @@ import usersRouter from './routes/users';
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(cors({ origin: process.env.CORS_ORIGIN || 'http://localhost:5173', credentials: true }));
+app.use(cors({
+  origin: (origin, callback) => {
+    const allowed = process.env.CORS_ORIGIN || 'http://localhost:5173';
+    // Allow the web app, the Chrome extension (any ID), and same-origin requests
+    if (!origin || origin === allowed || origin.startsWith('chrome-extension://')) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+}));
 app.use(express.json());
 app.use(session({
   secret: process.env.SESSION_SECRET || 'dev-secret-change-me',

@@ -4,6 +4,7 @@ import {
   ChevronUp, ChevronDown, ChevronsUpDown,
   SlidersHorizontal, Building2, Briefcase, Tag,
   Calendar, DollarSign, MapPin, Radio, Plus, X,
+  MoreHorizontal, Trash2,
 } from 'lucide-react';
 import { Header } from '../../../shared/components/Header';
 import { Footer } from '../../../shared/components/Footer';
@@ -85,6 +86,7 @@ export function DashboardPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [creating, setCreating] = useState(false);
   const [createForm, setCreateForm] = useState({ companyName: '', roleTitle: '', source: 'linkedin' as ApplicationSource });
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -103,6 +105,23 @@ export function DashboardPage() {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  useEffect(() => {
+    function close() { setOpenMenuId(null); }
+    document.addEventListener('click', close);
+    return () => document.removeEventListener('click', close);
+  }, []);
+
+  async function handleDelete(e: React.MouseEvent, id: string) {
+    e.stopPropagation();
+    setOpenMenuId(null);
+    try {
+      await applicationService.remove(id);
+      setApplications((prev) => prev.filter((a) => a.id !== id));
+    } catch {
+      // TODO: surface error
+    }
+  }
 
   function handleSort(key: SortKey) {
     if (key === sortKey) {
@@ -228,7 +247,7 @@ export function DashboardPage() {
         </div>
 
         {/* Table */}
-        <div className="w-full overflow-x-auto">
+        <div className="w-full">
           <table className="w-full border-collapse text-sm">
             <thead>
               <tr className="border-b border-gray-100">
@@ -241,18 +260,19 @@ export function DashboardPage() {
                     </span>
                   </th>
                 ))}
+                <th className="pb-2.5 w-8" />
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={7} className="py-10 text-center text-sm text-gray-300">
+                  <td colSpan={8} className="py-10 text-center text-sm text-gray-300">
                     Loading…
                   </td>
                 </tr>
               ) : sorted.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-10 text-center text-sm text-gray-300">
+                  <td colSpan={8} className="py-10 text-center text-sm text-gray-300">
                     {applications.length === 0 ? 'No applications yet. Add your first one.' : 'No applications match these filters.'}
                   </td>
                 </tr>
@@ -277,6 +297,27 @@ export function DashboardPage() {
                       </div>
                     </td>
                     <td className="py-3 text-gray-400 capitalize">{app.source ?? '—'}</td>
+                    <td className="py-3" onClick={(e) => e.stopPropagation()}>
+                      <div className="relative">
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setOpenMenuId(openMenuId === app.id ? null : app.id); }}
+                          className="flex h-6 w-6 cursor-pointer items-center justify-center rounded-md text-gray-300 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-gray-100 hover:text-gray-500"
+                        >
+                          <MoreHorizontal size={14} />
+                        </button>
+                        {openMenuId === app.id && (
+                          <div className="absolute right-0 top-7 z-20 w-36 rounded-xl border border-gray-100 bg-white py-1 shadow-lg">
+                            <button
+                              onClick={(e) => handleDelete(e, app.id)}
+                              className="flex w-full cursor-pointer items-center gap-2 px-3 py-2 text-sm text-red-500 hover:bg-gray-50"
+                            >
+                              <Trash2 size={13} />
+                              Delete
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </td>
                   </tr>
                 ))
               )}
