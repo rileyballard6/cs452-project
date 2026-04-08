@@ -20,6 +20,7 @@ interface UserRow extends RowDataPacket {
   linkedin_url: string | null;
   twitter: string | null;
   portfolio_public: number;
+  onboarding_complete: number;
   created_at: Date;
   last_login: Date;
 }
@@ -84,8 +85,10 @@ router.get(
   passport.authenticate('google', {
     failureRedirect: (process.env.CORS_ORIGIN ?? 'http://localhost:5173') + '/?error=auth',
   }),
-  (_req, res) => {
-    res.redirect((process.env.CORS_ORIGIN ?? 'http://localhost:5173') + '/applications');
+  (req, res) => {
+    const u = req.user as UserRow;
+    const dest = u?.onboarding_complete ? '/applications' : '/onboarding';
+    res.redirect((process.env.CORS_ORIGIN ?? 'http://localhost:5173') + dest);
   }
 );
 
@@ -107,6 +110,7 @@ router.get('/me', (req, res) => {
     linkedinUrl: u.linkedin_url,
     twitter: u.twitter,
     portfolioPublic: Boolean(u.portfolio_public),
+    onboardingComplete: Boolean(u.onboarding_complete),
     createdAt: u.created_at,
     lastLogin: u.last_login,
   });

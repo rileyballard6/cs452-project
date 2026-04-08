@@ -57,14 +57,15 @@ CREATE TABLE IF NOT EXISTS ai_analyses (
 
 -- Portfolio / public profile
 ALTER TABLE users
-  ADD COLUMN username         VARCHAR(50)  UNIQUE,
-  ADD COLUMN headline         VARCHAR(255),
-  ADD COLUMN bio              TEXT,
-  ADD COLUMN location         VARCHAR(255),
-  ADD COLUMN website          VARCHAR(500),
-  ADD COLUMN linkedin_url     VARCHAR(500),
-  ADD COLUMN twitter          VARCHAR(100),
-  ADD COLUMN portfolio_public BOOLEAN NOT NULL DEFAULT FALSE;
+  ADD COLUMN username           VARCHAR(50)  UNIQUE,
+  ADD COLUMN headline           VARCHAR(255),
+  ADD COLUMN bio                TEXT,
+  ADD COLUMN location           VARCHAR(255),
+  ADD COLUMN website            VARCHAR(500),
+  ADD COLUMN linkedin_url       VARCHAR(500),
+  ADD COLUMN twitter            VARCHAR(100),
+  ADD COLUMN portfolio_public   BOOLEAN NOT NULL DEFAULT FALSE,
+  ADD COLUMN onboarding_complete BOOLEAN NOT NULL DEFAULT FALSE;
 
 CREATE TABLE IF NOT EXISTS work_experience (
   id             VARCHAR(36)  PRIMARY KEY,

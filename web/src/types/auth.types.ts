@@ -13,6 +13,7 @@ export interface User {
   linkedinUrl: string | null;
   twitter: string | null;
   portfolioPublic: boolean;
+  onboardingComplete: boolean;
   createdAt: string;
   lastLogin: string;
 }

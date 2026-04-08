@@ -31,6 +31,7 @@ interface UserRow extends RowDataPacket {
   linkedin_url: string | null;
   twitter: string | null;
   portfolio_public: number;
+  onboarding_complete: number;
   created_at: Date;
   last_login: Date;
 }
@@ -51,6 +52,7 @@ function rowToUser(row: UserRow) {
     linkedinUrl: row.linkedin_url,
     twitter: row.twitter,
     portfolioPublic: Boolean(row.portfolio_public),
+    onboardingComplete: Boolean(row.onboarding_complete),
     createdAt: row.created_at,
     lastLogin: row.last_login,
   };
@@ -149,6 +151,18 @@ router.patch('/me', async (req, res) => {
     res.json(rowToUser(rows[0]));
   } catch {
     res.status(500).json({ error: 'Failed to update profile' });
+  }
+});
+
+// POST /users/me/complete-onboarding
+router.post('/me/complete-onboarding', async (req, res) => {
+  try {
+    const userId = (req.user as any).id;
+    await pool.query('UPDATE users SET onboarding_complete = TRUE WHERE id = ?', [userId]);
+    const [rows] = await pool.query<UserRow[]>('SELECT * FROM users WHERE id = ?', [userId]);
+    res.json(rowToUser(rows[0]));
+  } catch {
+    res.status(500).json({ error: 'Failed to complete onboarding' });
   }
 });
 

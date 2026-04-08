@@ -15,6 +15,15 @@ export const userService = {
     return res.json();
   },
 
+  async completeOnboarding(): Promise<User> {
+    const res = await fetch(`${API_BASE}/users/me/complete-onboarding`, {
+      method: 'POST',
+      credentials: 'include',
+    });
+    if (!res.ok) throw new Error(String(res.status));
+    return res.json();
+  },
+
   async uploadResume(file: File): Promise<{ user: User; parsed: unknown }> {
     const formData = new FormData();
     formData.append('resume', file);

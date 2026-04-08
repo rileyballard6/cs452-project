@@ -5,14 +5,14 @@ import { Logo } from '../../../shared/components/Logo';
 import { GoogleSignInButton } from '../components/GoogleSignInButton';
 
 export function HomePage() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, user } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
     if (!isLoading && isAuthenticated) {
-      navigate('/applications', { replace: true });
+      navigate(user?.onboardingComplete ? '/applications' : '/onboarding', { replace: true });
     }
-  }, [isAuthenticated, isLoading, navigate]);
+  }, [isAuthenticated, isLoading, user, navigate]);
 
   if (isLoading) return null;
 
