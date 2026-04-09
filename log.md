@@ -10,3 +10,4 @@
 |  4/4 | Build backend routes, expirment with document uploads, write DB schema and queries | 3 hours |
 |  4/5 | Build more AI features, expirment with outward facing portfolio creation, refine AI prompts, Adjust UX / UI | 2.5 hours |
 |  4/7 | Build out extension features, add onboarding stage, prepare for presentation | 3 hours |
+|  4/8 | Refactor ProfilePage into components, add delete option, change models, split up public portfolio sectoin | 2.5 hours |

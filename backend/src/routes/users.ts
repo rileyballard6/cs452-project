@@ -117,6 +117,24 @@ router.get('/u/:username', async (req, res) => {
 // ─── Authenticated routes ────────────────────────────────────────────────────
 router.use(requireAuth);
 
+// GET /users/me/check-username?username=foo
+router.get('/me/check-username', async (req, res) => {
+  try {
+    const userId = (req.user as any).id;
+    const { username } = req.query;
+    if (!username || typeof username !== 'string') {
+      return res.status(400).json({ error: 'username required' });
+    }
+    const [rows] = await pool.query<UserRow[]>(
+      'SELECT id FROM users WHERE username = ? AND id != ?',
+      [username, userId]
+    );
+    res.json({ available: (rows as any[]).length === 0 });
+  } catch {
+    res.status(500).json({ error: 'Failed to check username' });
+  }
+});
+
 // PATCH /users/me
 router.patch('/me', async (req, res) => {
   try {
@@ -232,6 +250,21 @@ router.post('/me/resume', upload.single('resume'), async (req, res) => {
   } catch (err) {
     console.error('Resume upload error:', err);
     res.status(500).json({ error: 'Failed to process resume' });
+  }
+});
+
+// DELETE /users/me
+router.delete('/me', async (req, res) => {
+  try {
+    const userId = (req.user as any).id;
+    await pool.query('DELETE FROM users WHERE id = ?', [userId]);
+    req.logout(() => {
+      req.session.destroy(() => {
+        res.json({ ok: true });
+      });
+    });
+  } catch {
+    res.status(500).json({ error: 'Failed to delete account' });
   }
 });
 

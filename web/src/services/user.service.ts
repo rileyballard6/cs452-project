@@ -133,6 +133,22 @@ export const userService = {
     });
   },
 
+  async deleteAccount(): Promise<void> {
+    const res = await fetch(`${API_BASE}/users/me`, {
+      method: 'DELETE',
+      credentials: 'include',
+    });
+    if (!res.ok) throw new Error(String(res.status));
+  },
+
+  async checkUsername(username: string): Promise<{ available: boolean }> {
+    const res = await fetch(`${API_BASE}/users/me/check-username?username=${encodeURIComponent(username)}`, {
+      credentials: 'include',
+    });
+    if (!res.ok) throw new Error(String(res.status));
+    return res.json();
+  },
+
   // ─── Public Profile ──────────────────────────────────────────────────────────
   async getPublicProfile(username: string): Promise<PublicProfile> {
     const res = await fetch(`${API_BASE}/users/u/${username}`);

@@ -176,7 +176,7 @@ export async function analyzeResume(
   jobDescription: string
 ): Promise<AnalysisResult> {
   const completion = await openai.chat.completions.create({
-    model: 'gpt-5.4-mini',
+    model: 'gpt-4o-mini',
     response_format: { type: 'json_object' },
     messages: [
       { role: 'system', content: SYSTEM_PROMPT },
