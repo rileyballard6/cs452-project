@@ -68,6 +68,23 @@ const router = express.Router();
 
 // ─── Public routes (no auth) ─────────────────────────────────────────────────
 
+// GET /users/check-username?username=foo
+router.get('/check-username', async (req, res) => {
+  try {
+    const { username } = req.query;
+    if (!username || typeof username !== 'string') {
+      return res.status(400).json({ error: 'username required' });
+    }
+    const [rows] = await pool.query<UserRow[]>(
+      'SELECT id FROM users WHERE username = ?',
+      [username]
+    );
+    res.json({ available: (rows as any[]).length === 0 });
+  } catch {
+    res.status(500).json({ error: 'Failed to check username' });
+  }
+});
+
 // GET /users/u/:username
 router.get('/u/:username', async (req, res) => {
   try {

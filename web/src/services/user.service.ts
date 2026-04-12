@@ -149,6 +149,12 @@ export const userService = {
     return res.json();
   },
 
+  async checkUsernamePublic(username: string): Promise<{ available: boolean }> {
+    const res = await fetch(`${API_BASE}/users/check-username?username=${encodeURIComponent(username)}`);
+    if (!res.ok) throw new Error(String(res.status));
+    return res.json();
+  },
+
   // ─── Public Profile ──────────────────────────────────────────────────────────
   async getPublicProfile(username: string): Promise<PublicProfile> {
     const res = await fetch(`${API_BASE}/users/u/${username}`);

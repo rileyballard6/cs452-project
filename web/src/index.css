@@ -14,3 +14,13 @@
 .animate-rise-up {
   animation: rise-up 0.22s ease-out forwards;
 }
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50%       { transform: translateY(-10px) rotate(1deg); }
+}
+
+.animate-float {
+  animation: float var(--float-duration, 4s) ease-in-out infinite;
+  animation-delay: var(--float-delay, 0s);
+}
