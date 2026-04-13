@@ -3,7 +3,7 @@ import { Plus, Pencil, X, Globe, ExternalLink } from 'lucide-react';
 import { userService } from '../../../services/user.service';
 import type { Project } from '../../../types/portfolio.types';
 
-const inputClass = 'w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 outline-none focus:border-gray-400 placeholder:text-gray-300';
+const inputClass = 'w-full rounded-lg border border-gray-200 px-3 py-2 text-base text-gray-700 outline-none focus:border-gray-400 placeholder:text-gray-300';
 
 interface ProjectForm {
   title: string; description: string; url: string; repoUrl: string;

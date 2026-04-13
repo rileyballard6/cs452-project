@@ -3,7 +3,7 @@ import { Pencil, X, Globe, MapPin, ExternalLink } from 'lucide-react';
 import { userService } from '../../../services/user.service';
 import type { User } from '../../../types/auth.types';
 
-const inputClass = 'w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 outline-none focus:border-gray-400 placeholder:text-gray-300';
+const inputClass = 'w-full rounded-lg border border-gray-200 px-3 py-2 text-base text-gray-700 outline-none focus:border-gray-400 placeholder:text-gray-300';
 
 interface IdentityForm {
   name: string; headline: string; bio: string; location: string;

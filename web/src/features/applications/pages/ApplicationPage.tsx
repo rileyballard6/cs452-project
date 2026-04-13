@@ -24,7 +24,7 @@ const statusStyles: Record<ApplicationStatus, string> = {
   rejected:  'bg-[rgb(244,221,218)] text-[rgb(110,35,25)]',
 };
 
-const inputClass = 'w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 outline-none focus:border-gray-400 placeholder:text-gray-300';
+const inputClass = 'w-full rounded-lg border border-gray-200 px-3 py-2 text-base text-gray-700 outline-none focus:border-gray-400 placeholder:text-gray-300';
 
 function formatDate(date: string | null) {
   if (!date) return '—';
@@ -61,6 +61,7 @@ export function ApplicationPage() {
   const [notes, setNotes] = useState('');
   const [jobDescription, setJobDescription] = useState('');
   const [saved, setSaved]               = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const [showOffer, setShowOffer]       = useState(false);
   const [analyses, setAnalyses]         = useState<AiAnalysis[]>([]);
   const [activeIdx, setActiveIdx]       = useState(0);
@@ -155,6 +156,12 @@ export function ApplicationPage() {
     await applicationService.update(app.id, { status, notes, jobDescription });
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
+  }
+
+  async function handleDelete() {
+    if (!app) return;
+    await applicationService.remove(app.id);
+    navigate('/applications');
   }
 
   async function handleAnalyze() {
@@ -463,7 +470,7 @@ export function ApplicationPage() {
             />
           </div>
 
-          <div className="mt-6 border-t border-gray-100 pt-6">
+          <div className="mt-6 flex items-center justify-between border-t border-gray-100 pt-6">
             <button
               onClick={handleSave}
               className={`cursor-pointer rounded-lg border px-4 py-1.5 text-sm font-medium transition-colors duration-300 hover:opacity-70 ${
@@ -474,6 +481,30 @@ export function ApplicationPage() {
             >
               {saved ? 'Saved ✓' : 'Save changes'}
             </button>
+            {confirmDelete ? (
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-gray-400">Delete?</span>
+                <button
+                  onClick={handleDelete}
+                  className="cursor-pointer rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-sm text-red-500 hover:opacity-70"
+                >
+                  Confirm
+                </button>
+                <button
+                  onClick={() => setConfirmDelete(false)}
+                  className="cursor-pointer rounded-lg border border-gray-200 px-3 py-1.5 text-sm text-gray-500 hover:opacity-70"
+                >
+                  Cancel
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setConfirmDelete(true)}
+                className="cursor-pointer rounded-lg border border-red-100 px-4 py-1.5 text-sm text-red-400 transition-colors hover:border-red-200 hover:bg-red-50 hover:text-red-500"
+              >
+                Delete
+              </button>
+            )}
           </div>
 
         </div>

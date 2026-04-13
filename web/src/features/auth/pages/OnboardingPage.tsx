@@ -165,7 +165,7 @@ export function OnboardingPage() {
                   placeholder="yourname"
                   maxLength={20}
                   autoFocus
-                  className="w-full rounded-xl border border-gray-200 py-3 pl-[5.75rem] pr-10 text-sm text-gray-800 outline-none transition-colors focus:border-gray-400 placeholder:text-gray-300"
+                  className="w-full rounded-xl border border-gray-200 py-3 pl-[5.75rem] pr-10 text-base text-gray-800 outline-none transition-colors focus:border-gray-400 placeholder:text-gray-300"
                 />
                 <div className="absolute right-3 top-1/2 -translate-y-1/2">
                   {checking && (

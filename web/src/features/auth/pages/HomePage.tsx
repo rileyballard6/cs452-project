@@ -11,7 +11,7 @@ import profileImg from "../../../assets/public_profile.png";
 import skillsImg from "../../../assets/skills_projects.png";
 
 function usernameValid(u: string) {
-  return /^[a-z0-9_-]{3,20}$/.test(u);
+  return /^[a-z0-9_]{3,20}$/.test(u);
 }
 
 const HERO_FEATURE = {
@@ -119,7 +119,7 @@ export function HomePage() {
   }, []);
 
   function handleUsernameChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const val = e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, "");
+    const val = e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, "");
     setUsername(val);
     setAvailable(null);
     checkUsername(val);
@@ -181,19 +181,17 @@ export function HomePage() {
             <p className="mb-2 text-xs font-medium uppercase tracking-widest text-gray-400">
               Claim your handle
             </p>
-            <div className="relative">
-              <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-sm text-gray-300">
-                folio.app/u/
-              </span>
+            <div className="flex items-center rounded-xl border border-gray-200 px-3.5 transition-colors focus-within:border-gray-400">
+              <span className="shrink-0 select-none text-base text-gray-300">folio.app/u/</span>
               <input
                 type="text"
                 value={username}
                 onChange={handleUsernameChange}
                 placeholder="yourname"
                 maxLength={20}
-                className="w-full rounded-xl border border-gray-200 py-3 pl-[5.75rem] pr-10 text-sm text-gray-800 outline-none transition-colors focus:border-gray-400 placeholder:text-gray-300"
+                className="min-w-0 flex-1 py-3 pr-2 text-base text-gray-800 outline-none placeholder:text-gray-300"
               />
-              <div className="absolute right-3 top-1/2 -translate-y-1/2">
+              <div className="shrink-0">
                 {checking && (
                   <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-200 border-t-gray-400" />
                 )}
@@ -232,7 +230,7 @@ export function HomePage() {
             )}
             {username && !usernameValid(username) && username.length > 0 && (
               <p className="mt-2 text-xs text-gray-400">
-                3–20 chars, letters, numbers, _ and - only
+                3–20 chars, letters, numbers, and _ only
               </p>
             )}
           </div>

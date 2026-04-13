@@ -68,24 +68,9 @@ export function PortfolioRow({ initialUsername, initialPublic, savedUsername }: 
 
   return (
     <div className="mb-10 rounded-xl border border-gray-100 bg-gray-50 px-5 py-4">
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex-1">
-          <p className="text-xs font-medium uppercase tracking-wider text-gray-400">Portfolio</p>
-          <div className="mt-2 flex items-center gap-1.5">
-            <span className="text-xs text-gray-400">/u/</span>
-            <input
-              type="text"
-              value={username}
-              onChange={e => { setSaved(false); setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '')); }}
-              placeholder="username"
-              className="w-32 rounded-md border border-gray-200 bg-white px-2 py-1 text-xs text-gray-700 outline-none focus:border-gray-400 placeholder:text-gray-300"
-            />
-            {status === 'checking' && <span className="text-xs text-gray-300">checking…</span>}
-            {status === 'available' && <span className="text-xs text-green-500">available</span>}
-            {status === 'taken' && <span className="text-xs text-red-400">taken</span>}
-          </div>
-        </div>
-        <div className="flex shrink-0 items-center gap-3 pt-0.5">
+      <div className="flex items-center justify-between gap-4">
+        <p className="text-xs font-medium uppercase tracking-wider text-gray-400">Portfolio</p>
+        <div className="flex items-center gap-3">
           <div className="flex items-center gap-2">
             <span className={`text-xs transition-colors ${isPublic ? 'text-gray-700' : 'text-gray-400'}`}>
               {toggleSaving ? 'Saving…' : isPublic ? 'Public' : 'Private'}
@@ -100,6 +85,19 @@ export function PortfolioRow({ initialUsername, initialPublic, savedUsername }: 
             {saved ? <span className="text-green-500">Saved</span> : saving ? 'Saving…' : 'Save'}
           </button>
         </div>
+      </div>
+      <div className="mt-2 flex items-center gap-1.5">
+        <span className="text-xs text-gray-400">/u/</span>
+        <input
+          type="text"
+          value={username}
+          onChange={e => { setSaved(false); setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '')); }}
+          placeholder="username"
+          className="w-32 rounded-md border border-gray-200 bg-white px-2 py-1 text-xs text-gray-700 outline-none focus:border-gray-400 placeholder:text-gray-300"
+        />
+        {status === 'checking' && <span className="text-xs text-gray-300">checking…</span>}
+        {status === 'available' && <span className="text-xs text-green-500">available</span>}
+        {status === 'taken' && <span className="text-xs text-red-400">taken</span>}
       </div>
       {isPublic && username && status !== 'taken' && (
         <a href={`/u/${username}`} target="_blank" rel="noopener noreferrer" className="mt-2 inline-flex items-center gap-1 text-xs text-gray-300 hover:opacity-70">
