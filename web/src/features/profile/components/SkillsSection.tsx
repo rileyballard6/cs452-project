@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { Plus, X } from 'lucide-react';
 import { userService } from '../../../services/user.service';
+import { useToast } from '../../../shared/components/Toast';
 import type { Skill } from '../../../types/portfolio.types';
 
 const CATEGORIES = ['language', 'framework', 'tool', 'other'] as const;
 
 export function SkillsSection({ refreshKey }: { refreshKey: number }) {
+  const { toast } = useToast();
   const [skills, setSkills] = useState<Skill[]>([]);
   const [newName, setNewName] = useState('');
   const [newCategory, setNewCategory] = useState('language');
@@ -16,9 +18,14 @@ export function SkillsSection({ refreshKey }: { refreshKey: number }) {
 
   async function handleAdd() {
     if (!newName.trim()) return;
-    const created = await userService.createSkill({ name: newName.trim(), category: newCategory });
-    setSkills(prev => [...prev, created]);
-    setNewName('');
+    try {
+      const created = await userService.createSkill({ name: newName.trim(), category: newCategory });
+      setSkills(prev => [...prev, created]);
+      setNewName('');
+      toast('Skill added');
+    } catch {
+      toast('Failed to add skill', 'error');
+    }
   }
 
   async function handleDelete(id: string) {
@@ -62,12 +69,12 @@ export function SkillsSection({ refreshKey }: { refreshKey: number }) {
           onChange={e => setNewName(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && handleAdd()}
           placeholder="Add skill…"
-          className="w-36 rounded-lg border border-gray-200 px-3 py-1.5 text-xs text-gray-700 outline-none focus:border-gray-400 placeholder:text-gray-300"
+          className="w-36 rounded-lg border border-gray-200 px-3 py-1.5 text-base text-gray-700 outline-none focus:border-gray-400 placeholder:text-gray-300"
         />
         <select
           value={newCategory}
           onChange={e => setNewCategory(e.target.value)}
-          className="rounded-lg border border-gray-200 px-2 py-1.5 text-xs text-gray-600 outline-none focus:border-gray-400"
+          className="rounded-lg border border-gray-200 px-2 py-1.5 text-base text-gray-600 outline-none focus:border-gray-400"
         >
           {CATEGORIES.map(c => <option key={c} value={c} className="capitalize">{c}</option>)}
         </select>

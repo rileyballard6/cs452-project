@@ -44,7 +44,7 @@ export function AccountSection() {
               value={confirmText}
               onChange={e => setConfirmText(e.target.value)}
               placeholder="DELETE"
-              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 outline-none focus:border-red-300 placeholder:text-gray-300"
+              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-base text-gray-700 outline-none focus:border-red-300 placeholder:text-gray-300"
             />
             <div className="mt-6 flex gap-2">
               <button onClick={() => setShowModal(false)} className="flex-1 cursor-pointer rounded-lg border border-gray-200 py-2 text-sm text-gray-500 hover:opacity-70">Cancel</button>

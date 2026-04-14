@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import confetti from 'canvas-confetti';
-import { ArrowLeft, ExternalLink, Sparkles, StickyNote, FileText, Calendar, DollarSign, MapPin, Radio, Link2, Pencil, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowLeft, ExternalLink, Sparkles, StickyNote, FileText, Calendar, DollarSign, MapPin, Radio, Link2, Pencil, X, ChevronLeft, ChevronRight, Clock } from 'lucide-react';
 import { applicationService } from '../../../services/application.service';
+import type { StatusHistoryEntry } from '../../../services/application.service';
 import { Header } from '../../../shared/components/Header';
 import { Footer } from '../../../shared/components/Footer';
+import { useToast } from '../../../shared/components/Toast';
 import type { Application, ApplicationStatus, ApplicationSource, AiAnalysis, AiVerdict } from '../../../types/application.types';
 
 const STATUS_OPTIONS: ApplicationStatus[] = ['saved', 'applied', 'interview', 'offer', 'rejected'];
@@ -54,13 +56,14 @@ interface EditForm {
 export function ApplicationPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   const [app, setApp] = useState<Application | null>(null);
+  const [statusHistory, setStatusHistory] = useState<StatusHistoryEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState<ApplicationStatus>('saved');
   const [notes, setNotes] = useState('');
   const [jobDescription, setJobDescription] = useState('');
-  const [saved, setSaved]               = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [showOffer, setShowOffer]       = useState(false);
   const [analyses, setAnalyses]         = useState<AiAnalysis[]>([]);
@@ -94,8 +97,12 @@ export function ApplicationPage() {
           source:      data.source ?? '',
           jobUrl:      data.jobUrl ?? '',
         });
-        const ai = await applicationService.getAnalysis(data.id).catch(() => []);
+        const [ai, history] = await Promise.all([
+          applicationService.getAnalysis(data.id).catch(() => []),
+          applicationService.getStatusHistory(data.id).catch(() => []),
+        ]);
         setAnalyses(ai);
+        setStatusHistory(history);
         setActiveIdx(0);
       })
       .catch(() => {})
@@ -110,6 +117,8 @@ export function ApplicationPage() {
     }
     if (!app) return;
     await applicationService.update(app.id, { status: newStatus });
+    const history = await applicationService.getStatusHistory(app.id).catch(() => []);
+    setStatusHistory(history);
   }
 
   function openEdit() {
@@ -146,6 +155,9 @@ export function ApplicationPage() {
       });
       setApp(updated);
       setShowEdit(false);
+      toast('Details updated');
+    } catch {
+      toast('Failed to save', 'error');
     } finally {
       setSaving(false);
     }
@@ -153,9 +165,12 @@ export function ApplicationPage() {
 
   async function handleSave() {
     if (!app) return;
-    await applicationService.update(app.id, { status, notes, jobDescription });
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+    try {
+      await applicationService.update(app.id, { status, notes, jobDescription });
+      toast('Changes saved');
+    } catch {
+      toast('Failed to save', 'error');
+    }
   }
 
   async function handleDelete() {
@@ -174,8 +189,11 @@ export function ApplicationPage() {
       const result = await applicationService.analyze(app.id);
       setAnalyses(prev => [result, ...prev]);
       setActiveIdx(0);
+      toast('Analysis complete');
     } catch (err) {
-      setAnalyzeError(err instanceof Error ? err.message : 'Something went wrong');
+      const msg = err instanceof Error ? err.message : 'Something went wrong';
+      setAnalyzeError(msg);
+      toast(msg, 'error');
     } finally {
       setAnalyzing(false);
     }
@@ -450,7 +468,7 @@ export function ApplicationPage() {
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Add any notes about this application…"
               rows={4}
-              className="w-full resize-none bg-transparent text-sm leading-relaxed text-gray-700 outline-none placeholder:text-gray-300"
+              className="w-full resize-none bg-transparent text-base leading-relaxed text-gray-700 outline-none placeholder:text-gray-300"
             />
           </div>
 
@@ -466,20 +484,16 @@ export function ApplicationPage() {
               onChange={(e) => setJobDescription(e.target.value)}
               placeholder="Paste the job description here to enable AI scoring…"
               rows={12}
-              className="w-full resize-none bg-transparent text-sm leading-relaxed text-gray-700 outline-none placeholder:text-gray-300"
+              className="w-full resize-none bg-transparent text-base leading-relaxed text-gray-700 outline-none placeholder:text-gray-300"
             />
           </div>
 
           <div className="mt-6 flex items-center justify-between border-t border-gray-100 pt-6">
             <button
               onClick={handleSave}
-              className={`cursor-pointer rounded-lg border px-4 py-1.5 text-sm font-medium transition-colors duration-300 hover:opacity-70 ${
-                saved
-                  ? 'border-green-200 bg-green-50 text-green-600'
-                  : 'border-gray-200 text-gray-600'
-              }`}
+              className="cursor-pointer rounded-lg border border-gray-200 px-4 py-1.5 text-sm font-medium text-gray-600 hover:opacity-70"
             >
-              {saved ? 'Saved ✓' : 'Save changes'}
+              Save changes
             </button>
             {confirmDelete ? (
               <div className="flex items-center gap-2">
@@ -506,6 +520,46 @@ export function ApplicationPage() {
               </button>
             )}
           </div>
+
+          {/* Status history */}
+          {statusHistory.length > 0 && (
+            <div className="mt-10">
+              <div className="border-t border-gray-100" />
+              <div className="mt-8">
+                <p className="mb-4 flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider text-gray-400">
+                  <Clock size={12} />Timeline
+                </p>
+                <div className="space-y-0">
+                  {statusHistory.map((entry, i) => (
+                    <div key={entry.id} className="flex items-start gap-3">
+                      <div className="flex flex-col items-center">
+                        <div className="mt-1 h-1.5 w-1.5 rounded-full bg-gray-300" />
+                        {i < statusHistory.length - 1 && (
+                          <div className="w-px flex-1 bg-gray-100" style={{ height: 28 }} />
+                        )}
+                      </div>
+                      <div className="pb-4">
+                        <p className="text-sm text-gray-700 capitalize">
+                          {entry.old_status ? (
+                            <span>
+                              <span className="text-gray-400">{entry.old_status}</span>
+                              {' → '}
+                              <span className="font-medium">{entry.new_status}</span>
+                            </span>
+                          ) : (
+                            <span className="font-medium">{entry.new_status}</span>
+                          )}
+                        </p>
+                        <p className="text-xs text-gray-300">
+                          {new Date(entry.changed_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
 
         </div>
       </main>

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { ExternalLink } from 'lucide-react';
 import { userService } from '../../../services/user.service';
+import { useToast } from '../../../shared/components/Toast';
 
 function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
   return (
@@ -22,6 +23,7 @@ interface Props {
 }
 
 export function PortfolioRow({ initialUsername, initialPublic, savedUsername }: Props) {
+  const { toast } = useToast();
   const [username, setUsername] = useState(initialUsername);
   const [isPublic, setIsPublic] = useState(initialPublic);
   const [saving, setSaving] = useState(false);
@@ -61,10 +63,13 @@ export function PortfolioRow({ initialUsername, initialPublic, savedUsername }: 
       await userService.updateMe({ username: username || null, portfolioPublic: isPublic } as any);
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
+      toast('Username saved');
+    } catch {
+      toast('Failed to save', 'error');
     } finally {
       setSaving(false);
     }
-  }, [username, isPublic]);
+  }, [username, isPublic, toast]);
 
   return (
     <div className="mb-10 rounded-xl border border-gray-100 bg-gray-50 px-5 py-4">
@@ -93,7 +98,7 @@ export function PortfolioRow({ initialUsername, initialPublic, savedUsername }: 
           value={username}
           onChange={e => { setSaved(false); setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '')); }}
           placeholder="username"
-          className="w-32 rounded-md border border-gray-200 bg-white px-2 py-1 text-xs text-gray-700 outline-none focus:border-gray-400 placeholder:text-gray-300"
+          className="w-32 rounded-md border border-gray-200 bg-white px-2 py-1 text-base text-gray-700 outline-none focus:border-gray-400 placeholder:text-gray-300"
         />
         {status === 'checking' && <span className="text-xs text-gray-300">checking…</span>}
         {status === 'available' && <span className="text-xs text-green-500">available</span>}

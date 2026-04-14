@@ -104,6 +104,15 @@ export interface ParsedResume {
     current: boolean;
     description: string;
   }[];
+  education: {
+    school: string;
+    degree: string | null;
+    fieldOfStudy: string | null;
+    startDate: string | null;
+    endDate: string | null;
+    current: boolean;
+    description: string | null;
+  }[];
   skills: {
     name: string;
     category: 'language' | 'framework' | 'tool' | 'other';
@@ -130,10 +139,21 @@ Return only a JSON object matching this exact shape — no extra fields, no mark
     {
       "company": <string>,
       "title": <string>,
-      "startDate": <string | null — YYYY-MM format>,
-      "endDate": <string | null — YYYY-MM format, null if current>,
-      "current": <boolean>,
+      "startDate": <string | null — YYYY-MM format only, e.g. "2022-06". Use null if unknown.>,
+      "endDate": <string | null — YYYY-MM format only. Use null if current or unknown.>,
+      "current": <boolean — true if this is the person's current role>,
       "description": <string — 1–4 sentence summary of responsibilities and impact>
+    }
+  ],
+  "education": [
+    {
+      "school": <string — full institution name>,
+      "degree": <string | null — e.g. "B.S.", "M.S.", "Ph.D.", "Associate", "High School". null if not stated.>,
+      "fieldOfStudy": <string | null — major or concentration, e.g. "Computer Science". null if not stated.>,
+      "startDate": <string | null — YYYY-MM format only. Use null if unknown.>,
+      "endDate": <string | null — YYYY-MM format only. Use null if current or unknown.>,
+      "current": <boolean — true if the person is currently enrolled>,
+      "description": <string | null — GPA, honors, activities if mentioned. null otherwise.>
     }
   ],
   "skills": [
@@ -153,7 +173,8 @@ Return only a JSON object matching this exact shape — no extra fields, no mark
 }
 
 Rules:
-- workExperience should be ordered most recent first.
+- workExperience and education should be ordered most recent first.
+- All dates MUST be in YYYY-MM format (e.g. "2021-09", "2023-05"). Never use "Present", year-only, or any other format — use null for unknown or ongoing end dates and set current=true instead.
 - skills: split grouped entries ("React, Node, TypeScript") into individual items. Do not duplicate.
 - If a field is not present in the resume, use null or an empty array.
 - Do not invent information. Only extract what is explicitly stated.`;

@@ -38,6 +38,19 @@ export interface Project {
   media: ProjectMedia[];
 }
 
+export interface Education {
+  id: string;
+  user_id: string;
+  school: string | null;
+  degree: string | null;
+  field_of_study: string | null;
+  start_date: string | null;
+  end_date: string | null;
+  current_student: boolean;
+  description: string | null;
+  display_order: number;
+}
+
 export interface PublicProfile {
   displayName: string | null;
   avatarUrl: string | null;
@@ -48,6 +61,7 @@ export interface PublicProfile {
   linkedinUrl: string | null;
   twitter: string | null;
   workExperience: WorkExperience[];
+  education: Education[];
   skills: Skill[];
   projects: Project[];
 }

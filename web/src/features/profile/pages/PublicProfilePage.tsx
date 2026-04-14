@@ -4,6 +4,10 @@ import { MapPin, Globe, ExternalLink } from 'lucide-react';
 import { userService } from '../../../services/user.service';
 import type { PublicProfile, Skill } from '../../../types/portfolio.types';
 
+function ensureUrl(url: string) {
+  return /^https?:\/\//i.test(url) ? url : `https://${url}`;
+}
+
 function formatDateRange(start: string | null, end: string | null, current: boolean) {
   if (!start && !end) return '';
   const fmt = (d: string) => {
@@ -81,18 +85,18 @@ export function PublicProfilePage() {
                 </span>
               )}
               {profile.website && (
-                <a href={profile.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs text-gray-400 hover:opacity-70">
-                  <Globe size={11} />{profile.website.replace(/^https?:\/\//, '')}
+                <a href={ensureUrl(profile.website)} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs text-gray-400 hover:opacity-70">
+                  <Globe size={11} />{profile.website.replace(/^https?:\/\//i, '')}
                 </a>
               )}
               {profile.linkedinUrl && (
-                <a href={profile.linkedinUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs text-gray-400 hover:opacity-70">
+                <a href={ensureUrl(profile.linkedinUrl)} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs text-gray-400 hover:opacity-70">
                   <ExternalLink size={11} />LinkedIn
                 </a>
               )}
               {profile.twitter && (
                 <a
-                  href={profile.twitter.startsWith('http') ? profile.twitter : `https://twitter.com/${profile.twitter.replace('@', '')}`}
+                  href={/^https?:\/\//i.test(profile.twitter) ? profile.twitter : `https://twitter.com/${profile.twitter.replace('@', '')}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-1 text-xs text-gray-400 hover:opacity-70"
@@ -140,6 +144,36 @@ export function PublicProfilePage() {
           </section>
         )}
 
+        {/* ─── Education ──────────────────────────────────────────────────── */}
+        {profile.education.length > 0 && (
+          <section className="mb-10">
+            <p className="mb-5 text-xs font-medium uppercase tracking-wider text-gray-400">Education</p>
+            <div className="space-y-6">
+              {profile.education.map(e => (
+                <div key={e.id} className="flex gap-5">
+                  <div className="flex flex-col items-center pt-1">
+                    <div className="h-1.5 w-1.5 rounded-full bg-gray-300" />
+                    <div className="mt-1 w-px flex-1 bg-gray-100" />
+                  </div>
+                  <div className="flex-1 pb-4">
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">{e.school}</p>
+                        <p className="text-sm text-gray-500">
+                          {[e.degree, e.field_of_study].filter(Boolean).join(' in ')}
+                        </p>
+                      </div>
+                      <p className="shrink-0 text-xs text-gray-400">{formatDateRange(e.start_date, e.end_date, e.current_student)}</p>
+                    </div>
+                    {e.description && <p className="mt-2 text-sm leading-relaxed text-gray-600">{e.description}</p>}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="mt-10 border-t border-gray-100" />
+          </section>
+        )}
+
         {/* ─── Skills ─────────────────────────────────────────────────────── */}
         {profile.skills.length > 0 && (
           <section className="mb-10">
@@ -167,12 +201,12 @@ export function PublicProfilePage() {
                   {p.description && <p className="mt-1.5 text-sm leading-relaxed text-gray-500">{p.description}</p>}
                   <div className="mt-3 flex items-center gap-3">
                     {p.url && (
-                      <a href={p.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs text-gray-400 hover:opacity-70">
+                      <a href={ensureUrl(p.url)} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs text-gray-400 hover:opacity-70">
                         <Globe size={11} />Live
                       </a>
                     )}
                     {p.repo_url && (
-                      <a href={p.repo_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs text-gray-400 hover:opacity-70">
+                      <a href={ensureUrl(p.repo_url)} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs text-gray-400 hover:opacity-70">
                         <ExternalLink size={11} />Repo
                       </a>
                     )}

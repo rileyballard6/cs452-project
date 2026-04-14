@@ -1,5 +1,5 @@
 import type { User } from '../types/auth.types';
-import type { WorkExperience, Skill, Project, PublicProfile } from '../types/portfolio.types';
+import type { WorkExperience, Education, Skill, Project, PublicProfile } from '../types/portfolio.types';
 
 const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:3000';
 
@@ -67,6 +67,42 @@ export const userService = {
 
   async deleteWorkExperience(id: string): Promise<void> {
     await fetch(`${API_BASE}/users/me/work-experience/${id}`, {
+      method: 'DELETE',
+      credentials: 'include',
+    });
+  },
+
+  // ─── Education ───────────────────────────────────────────────────────────────
+  async getEducation(): Promise<Education[]> {
+    const res = await fetch(`${API_BASE}/users/me/education`, { credentials: 'include' });
+    if (!res.ok) throw new Error(String(res.status));
+    return res.json();
+  },
+
+  async createEducation(data: Partial<Education>): Promise<Education> {
+    const res = await fetch(`${API_BASE}/users/me/education`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error(String(res.status));
+    return res.json();
+  },
+
+  async updateEducation(id: string, data: Partial<Education>): Promise<Education> {
+    const res = await fetch(`${API_BASE}/users/me/education/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error(String(res.status));
+    return res.json();
+  },
+
+  async deleteEducation(id: string): Promise<void> {
+    await fetch(`${API_BASE}/users/me/education/${id}`, {
       method: 'DELETE',
       credentials: 'include',
     });

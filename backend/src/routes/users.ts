@@ -99,6 +99,10 @@ router.get('/u/:username', async (req, res) => {
       'SELECT * FROM work_experience WHERE user_id = ? ORDER BY display_order ASC',
       [user.id]
     );
+    const [education] = await pool.query<RowDataPacket[]>(
+      'SELECT * FROM education WHERE user_id = ? ORDER BY display_order ASC',
+      [user.id]
+    );
     const [skills] = await pool.query<RowDataPacket[]>(
       'SELECT * FROM skills WHERE user_id = ? ORDER BY display_order ASC',
       [user.id]
@@ -125,6 +129,7 @@ router.get('/u/:username', async (req, res) => {
       linkedinUrl: user.linkedin_url,
       twitter:     user.twitter,
       workExperience,
+      education,
       skills,
       projects,
     });
@@ -239,6 +244,17 @@ router.post('/me/resume', upload.single('resume'), async (req, res) => {
         `INSERT INTO work_experience (id, user_id, company, title, start_date, end_date, current_role, description, display_order)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [uuidv4(), userId, w.company, w.title, toDate(w.startDate), toDate(w.endDate), w.current ? 1 : 0, w.description, i]
+      );
+    }
+
+    // Replace education
+    await pool.query('DELETE FROM education WHERE user_id = ?', [userId]);
+    for (let i = 0; i < (structured.education ?? []).length; i++) {
+      const e = structured.education[i];
+      await pool.query(
+        `INSERT INTO education (id, user_id, school, degree, field_of_study, start_date, end_date, current_student, description, display_order)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [uuidv4(), userId, e.school, e.degree ?? null, e.fieldOfStudy ?? null, toDate(e.startDate), toDate(e.endDate), e.current ? 1 : 0, e.description ?? null, i]
       );
     }
 
@@ -470,6 +486,60 @@ router.delete('/me/projects/:projectId/media/:mediaId', async (req, res) => {
     await pool.query('DELETE FROM project_media WHERE id = ? AND project_id = ?', [req.params.mediaId, req.params.projectId]);
     res.json({ ok: true });
   } catch { res.status(500).json({ error: 'Failed to delete media' }); }
+});
+
+// ─── Education ───────────────────────────────────────────────────────────────
+
+// GET /users/me/education
+router.get('/me/education', async (req, res) => {
+  try {
+    const userId = (req.user as any).id;
+    const [rows] = await pool.query<RowDataPacket[]>(
+      'SELECT * FROM education WHERE user_id = ? ORDER BY display_order ASC',
+      [userId]
+    );
+    res.json(rows);
+  } catch { res.status(500).json({ error: 'Failed to fetch education' }); }
+});
+
+// POST /users/me/education
+router.post('/me/education', async (req, res) => {
+  try {
+    const userId = (req.user as any).id;
+    const { school, degree, fieldOfStudy, startDate, endDate, current, description, displayOrder } = req.body;
+    const id = uuidv4();
+    await pool.query(
+      `INSERT INTO education (id, user_id, school, degree, field_of_study, start_date, end_date, current_student, description, display_order)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [id, userId, school ?? null, degree ?? null, fieldOfStudy ?? null, toDate(startDate), toDate(endDate), current ? 1 : 0, description ?? null, displayOrder ?? 0]
+    );
+    const [rows] = await pool.query<RowDataPacket[]>('SELECT * FROM education WHERE id = ?', [id]);
+    res.status(201).json(rows[0]);
+  } catch { res.status(500).json({ error: 'Failed to create education' }); }
+});
+
+// PATCH /users/me/education/:id
+router.patch('/me/education/:id', async (req, res) => {
+  try {
+    const userId = (req.user as any).id;
+    const { school, degree, fieldOfStudy, startDate, endDate, current, description, displayOrder } = req.body;
+    await pool.query(
+      `UPDATE education SET school=?, degree=?, field_of_study=?, start_date=?, end_date=?, current_student=?, description=?, display_order=?
+       WHERE id = ? AND user_id = ?`,
+      [school ?? null, degree ?? null, fieldOfStudy ?? null, toDate(startDate), toDate(endDate), current ? 1 : 0, description ?? null, displayOrder ?? 0, req.params.id, userId]
+    );
+    const [rows] = await pool.query<RowDataPacket[]>('SELECT * FROM education WHERE id = ?', [req.params.id]);
+    res.json(rows[0]);
+  } catch { res.status(500).json({ error: 'Failed to update education' }); }
+});
+
+// DELETE /users/me/education/:id
+router.delete('/me/education/:id', async (req, res) => {
+  try {
+    const userId = (req.user as any).id;
+    await pool.query('DELETE FROM education WHERE id = ? AND user_id = ?', [req.params.id, userId]);
+    res.json({ ok: true });
+  } catch { res.status(500).json({ error: 'Failed to delete education' }); }
 });
 
 export default router;

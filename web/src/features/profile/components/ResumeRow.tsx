@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
 import { Upload, CheckCircle } from 'lucide-react';
 import { userService } from '../../../services/user.service';
+import { useToast } from '../../../shared/components/Toast';
 
 interface Props {
   initialHasResume: boolean;
@@ -8,6 +9,7 @@ interface Props {
 }
 
 export function ResumeRow({ initialHasResume, onUploadComplete }: Props) {
+  const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
   const [hasResume, setHasResume] = useState(initialHasResume);
@@ -22,6 +24,9 @@ export function ResumeRow({ initialHasResume, onUploadComplete }: Props) {
       setHasResume(true);
       setUploadedFileName(file.name);
       onUploadComplete();
+      toast('Resume uploaded — profile updated');
+    } catch {
+      toast('Failed to upload resume', 'error');
     } finally {
       setUploading(false);
       e.target.value = '';

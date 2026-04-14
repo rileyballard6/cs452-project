@@ -1,6 +1,11 @@
 import { useState, useEffect } from 'react';
+
+function ensureUrl(url: string) {
+  return /^https?:\/\//i.test(url) ? url : `https://${url}`;
+}
 import { Pencil, X, Globe, MapPin, ExternalLink } from 'lucide-react';
 import { userService } from '../../../services/user.service';
+import { useToast } from '../../../shared/components/Toast';
 import type { User } from '../../../types/auth.types';
 
 const inputClass = 'w-full rounded-lg border border-gray-200 px-3 py-2 text-base text-gray-700 outline-none focus:border-gray-400 placeholder:text-gray-300';
@@ -23,6 +28,7 @@ function fromUser(user: User): IdentityForm {
 }
 
 export function IdentityHeader({ user }: { user: User }) {
+  const { toast } = useToast();
   const [identity, setIdentity] = useState<IdentityForm>(() => fromUser(user));
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState<IdentityForm>(identity);
@@ -46,6 +52,9 @@ export function IdentityHeader({ user }: { user: User }) {
       } as any);
       setIdentity({ ...form });
       setShowModal(false);
+      toast('Profile updated');
+    } catch {
+      toast('Failed to save', 'error');
     } finally {
       setSaving(false);
     }
@@ -73,18 +82,18 @@ export function IdentityHeader({ user }: { user: User }) {
                 <span className="flex items-center gap-1 text-xs text-gray-400"><MapPin size={11} />{identity.location}</span>
               )}
               {identity.website && (
-                <a href={identity.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs text-gray-400 hover:opacity-70">
+                <a href={ensureUrl(identity.website)} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs text-gray-400 hover:opacity-70">
                   <Globe size={11} />{identity.website.replace(/^https?:\/\//, '')}
                 </a>
               )}
               {identity.linkedinUrl && (
-                <a href={identity.linkedinUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs text-gray-400 hover:opacity-70">
+                <a href={ensureUrl(identity.linkedinUrl)} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs text-gray-400 hover:opacity-70">
                   <ExternalLink size={11} />LinkedIn
                 </a>
               )}
               {identity.twitter && (
                 <a
-                  href={identity.twitter.startsWith('http') ? identity.twitter : `https://twitter.com/${identity.twitter.replace('@', '')}`}
+                  href={/^https?:\/\//i.test(identity.twitter) ? identity.twitter : `https://twitter.com/${identity.twitter.replace('@', '')}`}
                   target="_blank" rel="noopener noreferrer"
                   className="flex items-center gap-1 text-xs text-gray-400 hover:opacity-70"
                 >

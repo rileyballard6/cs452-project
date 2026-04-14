@@ -45,6 +45,15 @@ interface ProjectRow extends RowDataPacket {
   repo_url: string | null;
 }
 
+interface EducationRow extends RowDataPacket {
+  school: string | null;
+  degree: string | null;
+  field_of_study: string | null;
+  start_date: string | null;
+  end_date: string | null;
+  current_student: number;
+}
+
 function rowToAnalysis(row: AiRow) {
   return {
     id: row.id,
@@ -137,6 +146,25 @@ router.get('/', async (req, res) => {
   }
 });
 
+// GET /applications/:id/status-history
+router.get('/:id/status-history', async (req, res) => {
+  try {
+    const userId = (req.user as any).id;
+    const [apps] = await pool.query<AppRow[]>(
+      'SELECT id FROM applications WHERE id = ? AND user_id = ?',
+      [req.params.id, userId]
+    );
+    if (apps.length === 0) return res.status(404).json({ error: 'Not found' });
+    const [rows] = await pool.query<RowDataPacket[]>(
+      'SELECT id, old_status, new_status, changed_at FROM status_history WHERE application_id = ? ORDER BY changed_at ASC',
+      [req.params.id]
+    );
+    res.json(rows);
+  } catch {
+    res.status(500).json({ error: 'Failed to fetch status history' });
+  }
+});
+
 // GET /applications/:id/analysis
 router.get('/:id/analysis', async (req, res) => {
   try {
@@ -191,6 +219,10 @@ router.post('/:id/analyze', async (req, res) => {
       'SELECT title, description, url FROM projects WHERE user_id = ? ORDER BY display_order ASC',
       [userId]
     );
+    const [educationRows] = await pool.query<EducationRow[]>(
+      'SELECT school, degree, field_of_study, start_date, end_date, current_student FROM education WHERE user_id = ? ORDER BY display_order ASC',
+      [userId]
+    );
 
     const hasStructured = workRows.length > 0 || skillRows.length > 0;
     let resumeContext: string;
@@ -221,6 +253,17 @@ router.post('/:id/analyze', async (req, res) => {
         lines.push('\nSkills:');
         for (const [cat, names] of Object.entries(byCategory)) {
           lines.push(`  ${cat}: ${names.join(', ')}`);
+        }
+      }
+
+      if (educationRows.length > 0) {
+        lines.push('\nEducation:');
+        for (const e of educationRows) {
+          const period = e.current_student
+            ? `${e.start_date ?? '?'} – Present`
+            : `${e.start_date ?? '?'} – ${e.end_date ?? '?'}`;
+          const label = [e.degree, e.field_of_study].filter(Boolean).join(' in ') || 'Degree';
+          lines.push(`  ${label} — ${e.school ?? 'School'} (${period})`);
         }
       }
 

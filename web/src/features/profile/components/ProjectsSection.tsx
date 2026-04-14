@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Plus, Pencil, X, Globe, ExternalLink } from 'lucide-react';
 import { userService } from '../../../services/user.service';
+import { useToast } from '../../../shared/components/Toast';
 import type { Project } from '../../../types/portfolio.types';
 
 const inputClass = 'w-full rounded-lg border border-gray-200 px-3 py-2 text-base text-gray-700 outline-none focus:border-gray-400 placeholder:text-gray-300';
@@ -10,6 +11,7 @@ interface ProjectForm {
 }
 
 export function ProjectsSection({ refreshKey }: { refreshKey: number }) {
+  const { toast } = useToast();
   const [projects, setProjects] = useState<Project[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState<Project | null>(null);
@@ -44,6 +46,9 @@ export function ProjectsSection({ refreshKey }: { refreshKey: number }) {
         setProjects(prev => [...prev, created]);
       }
       setShowModal(false);
+      toast('Project saved');
+    } catch {
+      toast('Failed to save', 'error');
     } finally {
       setSaving(false);
     }

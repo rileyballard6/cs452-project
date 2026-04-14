@@ -9,6 +9,7 @@ import { ProfilePage } from './features/profile/pages/ProfilePage';
 import { PublicProfilePage } from './features/profile/pages/PublicProfilePage';
 import { ApplicationPage } from './features/applications/pages/ApplicationPage';
 import { useAuth } from './hooks/useAuth';
+import { ToastProvider } from './shared/components/Toast';
 
 function ProtectedRoute({ children }: { children: ReactNode }) {
   const { isAuthenticated, isLoading, user } = useAuth();
@@ -20,6 +21,7 @@ function ProtectedRoute({ children }: { children: ReactNode }) {
 
 export default function App() {
   return (
+    <ToastProvider>
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<HomePage />} />
@@ -33,5 +35,6 @@ export default function App() {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
+    </ToastProvider>
   );
 }

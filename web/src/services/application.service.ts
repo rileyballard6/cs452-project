@@ -1,5 +1,12 @@
 import type { Application, AiAnalysis } from '../types/application.types';
 
+export interface StatusHistoryEntry {
+  id: string;
+  old_status: string | null;
+  new_status: string;
+  changed_at: string;
+}
+
 const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:3000';
 
 export const applicationService = {
@@ -46,6 +53,12 @@ export const applicationService = {
 
   async getAnalysis(id: string): Promise<AiAnalysis[]> {
     const res = await fetch(`${API_BASE}/applications/${id}/analysis`, { credentials: 'include' });
+    if (!res.ok) throw new Error(String(res.status));
+    return res.json();
+  },
+
+  async getStatusHistory(id: string): Promise<StatusHistoryEntry[]> {
+    const res = await fetch(`${API_BASE}/applications/${id}/status-history`, { credentials: 'include' });
     if (!res.ok) throw new Error(String(res.status));
     return res.json();
   },
