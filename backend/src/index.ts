@@ -9,6 +9,10 @@ import usersRouter from './routes/users';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const isProd = process.env.NODE_ENV === 'production';
+
+// Required for Railway (and most cloud hosts) which sit behind a reverse proxy
+app.set('trust proxy', 1);
 
 app.use(cors({
   origin: (origin, callback) => {
@@ -27,6 +31,13 @@ app.use(session({
   secret: process.env.SESSION_SECRET || 'dev-secret-change-me',
   resave: false,
   saveUninitialized: false,
+  cookie: {
+    httpOnly: true,
+    // Cross-domain cookies require sameSite:'none' + secure:true
+    sameSite: isProd ? 'none' : 'lax',
+    secure: isProd,
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+  },
 }));
 app.use(passport.initialize());
 app.use(passport.session());
