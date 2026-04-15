@@ -186,6 +186,14 @@ export function ApplicationPage() {
     navigate('/applications');
   }
 
+  async function handleUnarchive() {
+    if (!app) return;
+    await applicationService.unarchive(app.id);
+    setApp((prev) => prev ? { ...prev, archived: false } : prev);
+    setConfirmArchive(false);
+    toast('Application unarchived');
+  }
+
   async function handleAnalyze() {
     if (!app) return;
     setAnalyzing(true);
@@ -502,7 +510,14 @@ export function ApplicationPage() {
             >
               Save changes
             </button>
-            {analyses.length > 0 ? (
+            {app?.archived ? (
+              <button
+                onClick={handleUnarchive}
+                className="cursor-pointer rounded-lg border border-gray-200 px-4 py-1.5 text-sm text-gray-500 transition-colors hover:border-gray-300 hover:bg-gray-50"
+              >
+                Unarchive
+              </button>
+            ) : analyses.length > 0 ? (
               confirmArchive ? (
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-gray-400">Archive?</span>

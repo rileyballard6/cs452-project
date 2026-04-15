@@ -330,7 +330,7 @@ export function DashboardPage() {
 
         {view === 'kanban' && (
           <KanbanBoard
-            applications={applications}
+            applications={applications.filter((a) => showArchived ? a.archived : !a.archived)}
             loading={loading}
             remoteFilter={remoteFilter}
             onStatusChange={handleStatusChange}
