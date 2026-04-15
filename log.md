@@ -15,3 +15,4 @@
 |  4/11 | Spent perhaps an embarrasing amount of time playing with the home page until I got it to a place I liked  | 3 hours |
 |  4/12 | Add Kanban view, refactor code, work on deploying via vercel and railway  | 3.5 hours |
 |  4/13 | Figured out live deployment, add toasts, add education to profile, added loading state | 3 hours |
+|  4/13 | Worked on project report, fixed UI overlap bug, added archive functionality | 2.5 hours |
