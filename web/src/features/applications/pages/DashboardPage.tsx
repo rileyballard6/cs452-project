@@ -53,6 +53,7 @@ export function DashboardPage() {
   const [sortDir, setSortDir] = useState<SortDir>('desc');
   const [statusFilter, setStatusFilter] = useState<ApplicationStatus | 'all'>('all');
   const [remoteFilter, setRemoteFilter] = useState<'all' | 'remote' | 'onsite'>('all');
+  const [showArchived, setShowArchived] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
   const [view, setView] = useState<ViewMode>(() =>
     (localStorage.getItem('dashboard-view') as ViewMode) ?? 'list'
@@ -105,6 +106,24 @@ export function DashboardPage() {
     } catch {}
   }
 
+  async function handleArchive(e: React.MouseEvent, id: string) {
+    e.stopPropagation();
+    setOpenMenuId(null);
+    try {
+      await applicationService.archive(id);
+      setApplications((prev) => prev.map((a) => a.id === id ? { ...a, archived: true } : a));
+    } catch {}
+  }
+
+  async function handleUnarchive(e: React.MouseEvent, id: string) {
+    e.stopPropagation();
+    setOpenMenuId(null);
+    try {
+      await applicationService.unarchive(id);
+      setApplications((prev) => prev.map((a) => a.id === id ? { ...a, archived: false } : a));
+    } catch {}
+  }
+
   function handleSort(key: SortKey) {
     if (key === sortKey) {
       setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
@@ -153,6 +172,7 @@ export function DashboardPage() {
   }
 
   const filtered = applications
+    .filter((a) => showArchived ? a.archived : !a.archived)
     .filter((a) => statusFilter === 'all' || a.status === statusFilter)
     .filter((a) => {
       if (remoteFilter === 'remote') return a.remote;
@@ -161,7 +181,9 @@ export function DashboardPage() {
     });
 
   const sorted = sortApps(filtered, sortKey, sortDir);
-  const hasActiveFilters = statusFilter !== 'all' || remoteFilter !== 'all';
+  const activeCount = applications.filter((a) => !a.archived).length;
+  const archivedCount = applications.filter((a) => a.archived).length;
+  const hasActiveFilters = statusFilter !== 'all' || remoteFilter !== 'all' || showArchived;
 
   return (
     <div className="flex min-h-screen flex-col bg-white">
@@ -203,7 +225,7 @@ export function DashboardPage() {
                   Filter
                   {hasActiveFilters && (
                     <span className="ml-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-gray-900 text-[10px] text-white">
-                      {(statusFilter !== 'all' ? 1 : 0) + (remoteFilter !== 'all' ? 1 : 0)}
+                      {(statusFilter !== 'all' ? 1 : 0) + (remoteFilter !== 'all' ? 1 : 0) + (showArchived ? 1 : 0)}
                     </span>
                   )}
                 </button>
@@ -230,7 +252,7 @@ export function DashboardPage() {
                     </div>
 
                     <p className="mb-2 text-xs font-medium text-gray-400">Location type</p>
-                    <div className="flex gap-1">
+                    <div className="mb-4 flex gap-1">
                       {(['all', 'remote', 'onsite'] as const).map((r) => (
                         <button
                           key={r}
@@ -242,9 +264,25 @@ export function DashboardPage() {
                       ))}
                     </div>
 
+                    <p className="mb-2 text-xs font-medium text-gray-400">Visibility</p>
+                    <div className="flex gap-1">
+                      <button
+                        onClick={() => setShowArchived(false)}
+                        className={`cursor-pointer rounded-md px-2.5 py-1 text-xs transition-colors ${!showArchived ? 'bg-gray-100 font-medium text-gray-700' : 'text-gray-400 hover:text-gray-600'}`}
+                      >
+                        Active
+                      </button>
+                      <button
+                        onClick={() => setShowArchived(true)}
+                        className={`cursor-pointer rounded-md px-2.5 py-1 text-xs transition-colors ${showArchived ? 'bg-gray-100 font-medium text-gray-700' : 'text-gray-400 hover:text-gray-600'}`}
+                      >
+                        Archived {archivedCount > 0 && `(${archivedCount})`}
+                      </button>
+                    </div>
+
                     {hasActiveFilters && (
                       <button
-                        onClick={() => { setStatusFilter('all'); setRemoteFilter('all'); }}
+                        onClick={() => { setStatusFilter('all'); setRemoteFilter('all'); setShowArchived(false); }}
                         className="mt-4 cursor-pointer text-xs text-gray-400 hover:opacity-70"
                       >
                         Clear filters
@@ -267,7 +305,9 @@ export function DashboardPage() {
 
           {/* Count — sits below the toolbar on its own line */}
           <span className="text-xs text-gray-400">
-            {view === 'list' ? `${sorted.length} of ${applications.length}` : `${applications.length}`}
+            {view === 'list'
+              ? `${sorted.length} of ${showArchived ? archivedCount : activeCount}`
+              : `${showArchived ? archivedCount : activeCount}`}
           </span>
         </div>
 
@@ -275,13 +315,15 @@ export function DashboardPage() {
           <ApplicationTable
             apps={sorted}
             loading={loading}
-            totalCount={applications.length}
+            totalCount={showArchived ? archivedCount : activeCount}
             sortKey={sortKey}
             sortDir={sortDir}
             onSort={handleSort}
             openMenuId={openMenuId}
             setOpenMenuId={setOpenMenuId}
             onDelete={handleDelete}
+            onArchive={handleArchive}
+            onUnarchive={handleUnarchive}
             onStatusChange={handleStatusChange}
           />
         )}

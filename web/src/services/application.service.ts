@@ -51,6 +51,20 @@ export const applicationService = {
     });
   },
 
+  async archive(id: string): Promise<void> {
+    await fetch(`${API_BASE}/applications/${id}/archive`, {
+      method: 'PATCH',
+      credentials: 'include',
+    });
+  },
+
+  async unarchive(id: string): Promise<void> {
+    await fetch(`${API_BASE}/applications/${id}/unarchive`, {
+      method: 'PATCH',
+      credentials: 'include',
+    });
+  },
+
   async getAnalysis(id: string): Promise<AiAnalysis[]> {
     const res = await fetch(`${API_BASE}/applications/${id}/analysis`, { credentials: 'include' });
     if (!res.ok) throw new Error(String(res.status));

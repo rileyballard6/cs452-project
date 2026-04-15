@@ -65,6 +65,7 @@ export function ApplicationPage() {
   const [notes, setNotes] = useState('');
   const [jobDescription, setJobDescription] = useState('');
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [confirmArchive, setConfirmArchive] = useState(false);
   const [showOffer, setShowOffer]       = useState(false);
   const [analyses, setAnalyses]         = useState<AiAnalysis[]>([]);
   const [activeIdx, setActiveIdx]       = useState(0);
@@ -176,6 +177,12 @@ export function ApplicationPage() {
   async function handleDelete() {
     if (!app) return;
     await applicationService.remove(app.id);
+    navigate('/applications');
+  }
+
+  async function handleArchive() {
+    if (!app) return;
+    await applicationService.archive(app.id);
     navigate('/applications');
   }
 
@@ -495,7 +502,32 @@ export function ApplicationPage() {
             >
               Save changes
             </button>
-            {confirmDelete ? (
+            {analyses.length > 0 ? (
+              confirmArchive ? (
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-gray-400">Archive?</span>
+                  <button
+                    onClick={handleArchive}
+                    className="cursor-pointer rounded-lg border border-gray-200 bg-gray-50 px-3 py-1.5 text-sm text-gray-600 hover:opacity-70"
+                  >
+                    Confirm
+                  </button>
+                  <button
+                    onClick={() => setConfirmArchive(false)}
+                    className="cursor-pointer rounded-lg border border-gray-200 px-3 py-1.5 text-sm text-gray-500 hover:opacity-70"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setConfirmArchive(true)}
+                  className="cursor-pointer rounded-lg border border-gray-200 px-4 py-1.5 text-sm text-gray-500 transition-colors hover:border-gray-300 hover:bg-gray-50"
+                >
+                  Archive
+                </button>
+              )
+            ) : confirmDelete ? (
               <div className="flex items-center gap-2">
                 <span className="text-xs text-gray-400">Delete?</span>
                 <button

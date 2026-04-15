@@ -20,6 +20,8 @@ export interface Application {
   notes: string | null;
   location: string | null;
   remote: boolean;
+  archived: boolean;
+  hasAnalysis: boolean;
   createdAt: string;
   updatedAt: string;
 }

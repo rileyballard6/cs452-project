@@ -84,6 +84,8 @@ interface AppRow extends RowDataPacket {
   notes: string | null;
   location: string | null;
   remote: number;
+  archived: number;
+  has_analysis: number;
   created_at: Date;
   updated_at: Date;
 }
@@ -107,6 +109,8 @@ function rowToApp(row: AppRow) {
     notes: row.notes,
     location: row.location,
     remote: Boolean(row.remote),
+    archived: Boolean(row.archived),
+    hasAnalysis: Boolean(row.has_analysis),
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -137,7 +141,11 @@ router.get('/', async (req, res) => {
   try {
     const userId = (req.user as any).id;
     const [rows] = await pool.query<AppRow[]>(
-      'SELECT * FROM applications WHERE user_id = ? ORDER BY created_at DESC',
+      `SELECT a.*,
+         EXISTS(SELECT 1 FROM ai_analyses aa WHERE aa.application_id = a.id) AS has_analysis
+       FROM applications a
+       WHERE a.user_id = ?
+       ORDER BY a.created_at DESC`,
       [userId]
     );
     res.json(rows.map(rowToApp));
@@ -323,7 +331,10 @@ router.get('/:id', async (req, res) => {
   try {
     const userId = (req.user as any).id;
     const [rows] = await pool.query<AppRow[]>(
-      'SELECT * FROM applications WHERE id = ? AND user_id = ?',
+      `SELECT a.*,
+         EXISTS(SELECT 1 FROM ai_analyses aa WHERE aa.application_id = a.id) AS has_analysis
+       FROM applications a
+       WHERE a.id = ? AND a.user_id = ?`,
       [req.params.id, userId]
     );
     if (rows.length === 0) return res.status(404).json({ error: 'Not found' });
@@ -363,7 +374,11 @@ router.post('/', async (req, res) => {
       [uuidv4(), id, null, status]
     );
 
-    const [rows] = await pool.query<AppRow[]>('SELECT * FROM applications WHERE id = ?', [id]);
+    const [rows] = await pool.query<AppRow[]>(
+      `SELECT a.*, EXISTS(SELECT 1 FROM ai_analyses aa WHERE aa.application_id = a.id) AS has_analysis
+       FROM applications a WHERE a.id = ?`,
+      [id]
+    );
     res.status(201).json(rowToApp(rows[0]));
   } catch {
     res.status(500).json({ error: 'Failed to create application' });
@@ -416,10 +431,44 @@ router.patch('/:id', async (req, res) => {
       }
     }
 
-    const [rows] = await pool.query<AppRow[]>('SELECT * FROM applications WHERE id = ?', [req.params.id]);
+    const [rows] = await pool.query<AppRow[]>(
+      `SELECT a.*, EXISTS(SELECT 1 FROM ai_analyses aa WHERE aa.application_id = a.id) AS has_analysis
+       FROM applications a WHERE a.id = ?`,
+      [req.params.id]
+    );
     res.json(rowToApp(rows[0]));
   } catch {
     res.status(500).json({ error: 'Failed to update application' });
+  }
+});
+
+// PATCH /applications/:id/archive
+router.patch('/:id/archive', async (req, res) => {
+  try {
+    const userId = (req.user as any).id;
+    const [result] = await pool.query<ResultSetHeader>(
+      'UPDATE applications SET archived = 1, updated_at = NOW() WHERE id = ? AND user_id = ?',
+      [req.params.id, userId]
+    );
+    if (result.affectedRows === 0) return res.status(404).json({ error: 'Not found' });
+    res.json({ ok: true });
+  } catch {
+    res.status(500).json({ error: 'Failed to archive application' });
+  }
+});
+
+// PATCH /applications/:id/unarchive
+router.patch('/:id/unarchive', async (req, res) => {
+  try {
+    const userId = (req.user as any).id;
+    const [result] = await pool.query<ResultSetHeader>(
+      'UPDATE applications SET archived = 0, updated_at = NOW() WHERE id = ? AND user_id = ?',
+      [req.params.id, userId]
+    );
+    if (result.affectedRows === 0) return res.status(404).json({ error: 'Not found' });
+    res.json({ ok: true });
+  } catch {
+    res.status(500).json({ error: 'Failed to unarchive application' });
   }
 });
 
@@ -427,6 +476,14 @@ router.patch('/:id', async (req, res) => {
 router.delete('/:id', async (req, res) => {
   try {
     const userId = (req.user as any).id;
+    // Block deletion if the application has AI analyses
+    const [analyses] = await pool.query<RowDataPacket[]>(
+      'SELECT id FROM ai_analyses WHERE application_id = ? LIMIT 1',
+      [req.params.id]
+    );
+    if (analyses.length > 0) {
+      return res.status(409).json({ error: 'Cannot delete an application with AI analysis. Archive it instead.' });
+    }
     const [result] = await pool.query<ResultSetHeader>(
       'DELETE FROM applications WHERE id = ? AND user_id = ?',
       [req.params.id, userId]

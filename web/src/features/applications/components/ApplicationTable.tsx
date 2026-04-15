@@ -1,9 +1,10 @@
 import { useState, useEffect, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import {
   ChevronUp, ChevronDown, ChevronsUpDown,
   Building2, Briefcase, Tag, Calendar,
-  DollarSign, MapPin, Radio, MoreHorizontal, Trash2,
+  DollarSign, MapPin, Radio, MoreHorizontal, Trash2, Archive, ArchiveRestore,
 } from 'lucide-react';
 import { StatusBadge } from './StatusBadge';
 import type { Application, ApplicationStatus } from '../../../types/application.types';
@@ -23,6 +24,8 @@ interface Props {
   openMenuId: string | null;
   setOpenMenuId: (id: string | null) => void;
   onDelete: (e: React.MouseEvent, id: string) => void;
+  onArchive: (e: React.MouseEvent, id: string) => void;
+  onUnarchive: (e: React.MouseEvent, id: string) => void;
   onStatusChange: (id: string, status: ApplicationStatus) => void;
 }
 
@@ -56,15 +59,33 @@ function formatSalary(min: number | null, max: number | null) {
 
 const thClass = 'pb-2.5 text-left text-xs font-medium text-gray-400 cursor-pointer select-none hover:text-gray-600 transition-colors pr-6';
 
-export function ApplicationTable({ apps, loading, totalCount, sortKey, sortDir, onSort, openMenuId, setOpenMenuId, onDelete, onStatusChange }: Props) {
+export function ApplicationTable({ apps, loading, totalCount, sortKey, sortDir, onSort, openMenuId, setOpenMenuId, onDelete, onArchive, onUnarchive, onStatusChange }: Props) {
   const navigate = useNavigate();
   const [statusMenuId, setStatusMenuId] = useState<string | null>(null);
+  const [statusMenuPos, setStatusMenuPos] = useState({ top: 0, left: 0 });
+  const [actionMenuPos, setActionMenuPos] = useState({ top: 0, right: 0 });
 
   useEffect(() => {
     function close() { setStatusMenuId(null); }
     document.addEventListener('click', close);
     return () => document.removeEventListener('click', close);
   }, []);
+
+  function openStatusMenu(e: React.MouseEvent, id: string) {
+    e.stopPropagation();
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    setStatusMenuPos({ top: rect.bottom + 4, left: rect.left });
+    setStatusMenuId(statusMenuId === id ? null : id);
+  }
+
+  function openActionMenu(e: React.MouseEvent, id: string) {
+    e.stopPropagation();
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    setActionMenuPos({ top: rect.bottom + 4, right: window.innerWidth - rect.right });
+    setOpenMenuId(openMenuId === id ? null : id);
+  }
+
+  const activeApp = openMenuId ? apps.find((a) => a.id === openMenuId) : null;
 
   return (
     <div className="w-full overflow-x-auto">
@@ -103,28 +124,13 @@ export function ApplicationTable({ apps, loading, totalCount, sortKey, sortDir, 
               >
                 <td className="py-3 pr-6 font-medium text-gray-900">{app.companyName ?? '—'}</td>
                 <td className="py-3 pr-6 text-gray-600">{app.roleTitle ?? '—'}</td>
-                <td className="py-3 pr-6" onClick={(e) => e.stopPropagation()}>
-                  <div className="relative">
-                    <button
-                      onClick={(e) => { e.stopPropagation(); setStatusMenuId(statusMenuId === app.id ? null : app.id); }}
-                      className="cursor-pointer rounded-full transition-opacity hover:opacity-70"
-                    >
-                      <StatusBadge status={app.status} />
-                    </button>
-                    {statusMenuId === app.id && (
-                      <div className="animate-rise-up absolute left-0 top-8 z-20 w-36 rounded-xl border border-gray-100 bg-white py-1.5 shadow-lg">
-                        {ALL_STATUSES.map((s) => (
-                          <button
-                            key={s}
-                            onClick={(e) => { e.stopPropagation(); onStatusChange(app.id, s); setStatusMenuId(null); }}
-                            className="flex w-full cursor-pointer items-center gap-2 px-3 py-1.5 hover:bg-gray-50"
-                          >
-                            <StatusBadge status={s} />
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
+                <td className="py-3 pr-6">
+                  <button
+                    onClick={(e) => openStatusMenu(e, app.id)}
+                    className="cursor-pointer rounded-full transition-opacity hover:opacity-70"
+                  >
+                    <StatusBadge status={app.status} />
+                  </button>
                 </td>
                 <td className="py-3 pr-6 text-gray-500">{formatDate(app.dateApplied)}</td>
                 <td className="py-3 pr-6 text-gray-500">{formatSalary(app.salaryMin, app.salaryMax)}</td>
@@ -138,31 +144,74 @@ export function ApplicationTable({ apps, loading, totalCount, sortKey, sortDir, 
                 </td>
                 <td className="py-3 text-gray-400 capitalize">{app.source ?? '—'}</td>
                 <td className="py-3" onClick={(e) => e.stopPropagation()}>
-                  <div className="relative">
-                    <button
-                      onClick={(e) => { e.stopPropagation(); setOpenMenuId(openMenuId === app.id ? null : app.id); }}
-                      className="flex h-6 w-6 cursor-pointer items-center justify-center rounded-md text-gray-300 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-gray-100 hover:text-gray-500"
-                    >
-                      <MoreHorizontal size={14} />
-                    </button>
-                    {openMenuId === app.id && (
-                      <div className="absolute right-0 top-7 z-20 w-36 rounded-xl border border-gray-100 bg-white py-1 shadow-lg">
-                        <button
-                          onClick={(e) => onDelete(e, app.id)}
-                          className="flex w-full cursor-pointer items-center gap-2 px-3 py-2 text-sm text-red-500 hover:bg-gray-50"
-                        >
-                          <Trash2 size={13} />
-                          Delete
-                        </button>
-                      </div>
-                    )}
-                  </div>
+                  <button
+                    onClick={(e) => openActionMenu(e, app.id)}
+                    className="flex h-6 w-6 cursor-pointer items-center justify-center rounded-md text-gray-300 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-gray-100 hover:text-gray-500"
+                  >
+                    <MoreHorizontal size={14} />
+                  </button>
                 </td>
               </tr>
             ))
           )}
         </tbody>
       </table>
+
+      {/* Status dropdown — portaled to avoid overflow clipping */}
+      {statusMenuId && createPortal(
+        <div
+          style={{ position: 'fixed', top: statusMenuPos.top, left: statusMenuPos.left, zIndex: 9999 }}
+          className="animate-rise-up w-36 rounded-xl border border-gray-100 bg-white py-1.5 shadow-lg"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {ALL_STATUSES.map((s) => (
+            <button
+              key={s}
+              onClick={(e) => { e.stopPropagation(); onStatusChange(statusMenuId, s); setStatusMenuId(null); }}
+              className="flex w-full cursor-pointer items-center gap-2 px-3 py-1.5 hover:bg-gray-50"
+            >
+              <StatusBadge status={s} />
+            </button>
+          ))}
+        </div>,
+        document.body
+      )}
+
+      {/* Action (three-dot) dropdown — portaled to avoid overflow clipping */}
+      {openMenuId && activeApp && createPortal(
+        <div
+          style={{ position: 'fixed', top: actionMenuPos.top, right: actionMenuPos.right, zIndex: 9999 }}
+          className="animate-rise-up w-36 rounded-xl border border-gray-100 bg-white py-1 shadow-lg"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {activeApp.archived ? (
+            <button
+              onClick={(e) => onUnarchive(e, activeApp.id)}
+              className="flex w-full cursor-pointer items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-50"
+            >
+              <ArchiveRestore size={13} />
+              Unarchive
+            </button>
+          ) : activeApp.hasAnalysis ? (
+            <button
+              onClick={(e) => onArchive(e, activeApp.id)}
+              className="flex w-full cursor-pointer items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-50"
+            >
+              <Archive size={13} />
+              Archive
+            </button>
+          ) : (
+            <button
+              onClick={(e) => onDelete(e, activeApp.id)}
+              className="flex w-full cursor-pointer items-center gap-2 px-3 py-2 text-sm text-red-500 hover:bg-gray-50"
+            >
+              <Trash2 size={13} />
+              Delete
+            </button>
+          )}
+        </div>,
+        document.body
+      )}
     </div>
   );
 }
